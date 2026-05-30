@@ -35,7 +35,7 @@ app.add_middleware(
 # ── 配置 ─────────────────────────────────────────
 API_KEY = os.getenv("MINDSCAPE_API_KEY", "sk-9KefbdsjfSTLm0ijDbEd0622878b4f0a826bA3Db6a5bCa9d")
 API_BASE = os.getenv("MINDSCAPE_API_BASE", "https://api.openai-next.com/v1")
-LLM_MODEL = os.getenv("MINDSCAPE_LLM_MODEL", "gpt-4o-mini")
+LLM_MODEL = os.getenv("MINDSCAPE_LLM_MODEL", "claude-sonnet-4-6")
 IMAGE_MODEL = os.getenv("MINDSCAPE_IMAGE_MODEL", "gpt-image-2")
 
 from openai import OpenAI, APIError, APITimeoutError, APIConnectionError
@@ -100,46 +100,110 @@ def call_image_with_retry(prompt, max_retries=3):
 # ═══════════════════════════════════════════════════
 # System Prompt — 与 main.js 同步（prompts.ts 精华已融入）
 # ═══════════════════════════════════════════════════
-SYSTEM_PROMPT = """你是一个文本情感分析专家，进行情绪-颜色可视化，意象-物体可视化。将日记文本转化为结构化JSON数据。
-
-用户输入一段日记文本。
-
-【分析规则】
-如果是抽象感受的比喻化创作（极度重要：若无实体，执行此条）如果用户没有描述具体意象，只表达了抽象感受/事件（例如："我感觉被掏空了"），你必须发挥"艺术家的洞察力"，创作一个具有慰藉、理解或提供新视角意义的图片
-特别的是：如果用户输入的是参加了黑客松比赛之类，不要输出奖杯——输出团队协作场景，例如几个人围在电脑前热烈讨论开发、多双手在键盘上协作、或一群伙伴并肩面对屏幕的剪影。（这相当于一个小彩蛋）
-对每一个输入片段进行独立分析，返回一个JSON数组。每个元素包含：
-1. 情绪: 提取主导和次要情绪及其置信度 (0.0-1.0)。
-2. 颜色:
-  - 基于情绪推导颜色，情绪和颜色一一对应。
-  - 格式：RGB十六进制字符串 (如 "#3B82F6")。
-  - 此处不要使用黑色和白色。
-3. 意象: 提取最核心的名词短语。
-4. 生图提示词:
-  - 必须以 solid black fill/outline style, pure white background, minimalist, flat design 开头
-  - 必须明确说明禁止出现除黑色和白色以外的任何颜色
-  - 必须明确说明 黑色填充 (Solid Black Fill) 或 黑色勾线 (Black Outline) 风格。
-  - 不允许出现除了black和white以外的颜色。
-
-Output Format
-仅输出合法的 JSON 对象，无额外解释：
-{
-  "imagePrompt": "solid black fill/outline style, pure white background, minimalist, flat design, [核心意象]",
-  "themeColor": "#RRGGBB"
+# ═══════════════════════════════════════════════════
+# 提示词 1 — 文本分析：情绪 + 颜色 + imagePrompt
+# ═══════════════════════════════════════════════════
+ANALYSIS_PROMPT = R"""你是一个专业的文本情感分析与创意可视化专家，擅长将任意日记文本转化为精准的情绪 - 颜色 - 比例映射和极简黑白风格的意象插画提示词。请严格遵循以下所有规则进行处理：
+核心分析规则（优先级最高）
+抽象感受创作规则：如果用户没有描述具体实体意象，只表达了抽象感受 / 事件（例如："我感觉被掏空了"），你必须发挥 "艺术家的洞察力"，创作一个具有慰藉、理解或提供新视角意义的图片意象。
+特殊场景多元表达规则：如果用户输入的是参加比赛、获奖、团队开发等内容，优先生成多元场景而非单一奖杯。例如：团队协作讨论、代码屏幕、庆祝击掌、证书、笔记本电脑等；奖杯仅作为可选元素之一，不得作为唯一输出。
+黑白风格强制规则：所有生图提示词必须严格遵循纯黑白极简风格，禁止出现任何其他颜色。
+动态比例分配规则（核心修改）
+0.7:0.2:0.1 仅为参考比例，你必须根据文本中实际情绪的强度、出现频率和重要性动态分配比例
+所有情绪的比例总和必须严格等于 1.0
+主导情绪的比例通常在 0.5-0.9 之间，次要情绪比例在 0.1-0.4 之间
+如果文本中只有 1 种明显情绪，比例为 1.0
+如果文本中有 2 种情绪，按照实际强度分配（如 0.8:0.2、0.6:0.4 等）
+如果文本中有 3 种及以上情绪，最多保留 3 种主导情绪，按照实际强度分配比例
+输入分级处理规则
+根据用户输入的复杂度和清晰度，采用不同的处理策略：
+1. 极简 / 无明显情感意向输入
+定义：单字、短句、无明确情绪和具体描述的内容（如："嗯"、"今天"、"不知道写什么"）
+处理方式：诙谐幽默地匹配基础可爱意象和 1 种柔和颜色，比例为 1.0
+示例：输入 "嗯" → 意象：点头的小圆圈；颜色：#94A3B8；比例：1.0
+2. 中等复杂度输入
+定义：包含 1-2 个明确事件和 1-3 种情绪的普通日记内容
+处理方式：提取所有核心实体意象（通常 3-4 个），完整还原场景氛围；根据实际情绪强度动态分配 2-3 种情绪的比例
+3. 高复杂度输入
+定义：包含多个事件、多种情绪、大量细节的长文本
+处理方式：最多提取 3 个最核心的意象 + 3 种主导情绪，忽略所有次要细节和边缘情绪；根据实际情绪强度动态分配比例
+4. 异常 / 无意义输入
+定义：乱码、随机字符、莫名其妙的词汇组合
+处理方式：使用基础友好预设，匹配通用治愈系意象和 1 种柔和颜色，比例为 1.0
+基础预设库：星星、云朵、小树苗、鹅卵石、纸飞机；对应颜色：#A78BFA、#60A5FA、#34D399、#FBBF24、#F472B6
+        输出字段要求
+        对每一个输入片段进行独立分析，返回一个 JSON 对象，包含以下两个字段：
+        imagePrompt：
+        必须以 solid black fill style, pure white background, minimalist, flat design 开头
+        必须明确说明：no other colors allowed except black and white
+        后面跟随根据上述规则提取的核心意象描述
+        格式示例：solid black fill style, pure white background, minimalist, flat design, no other colors allowed except black and white, [核心意象描述]
+        themeColor：
+        基于主导情绪和场景氛围推导对应的主题颜色
+        格式：严格的 RGB 十六进制字符串（如 "#3B82F6"）
+        绝对禁止使用黑色 (#000000) 和白色 (#FFFFFF)
+        Output Format
+        仅输出合法的 JSON 对象，无额外解释：
+        {
+       "imagePrompt": "solid black fill style, pure white background, minimalist, flat design, no other colors allowed except black and white, [核心意象描述]",
+  "themeColor": "#RRGGBB",
+  "colors": [
+    {"emotion": "主导情绪", "color": "#RRGGBB", "proportion": 0.8},
+    {"emotion": "次要情绪", "color": "#RRGGBB", "proportion": 0.2}
+  ]
+        }
+        如果遇到无法处理的极端情况，直接输出以下默认内容：{
+  "imagePrompt": "solid black fill style, pure white background, minimalist, flat design, no other colors allowed except black and white, small star icon",
+  "themeColor": "#A78BFA",
+  "colors": [
+    {"emotion": "平静", "color": "#A78BFA", "proportion": 1.0}
+  ]
 }
 
-themeColor 必须为十六进制颜色，不能使用黑色或白色。
+        themeColor 必须为十六进制颜色，不能使用黑色或白色。
+        
 
-Example
-Input: "今天我参加了抖音的比赛"
-Output:
+        
+      example 1：单一强烈情绪
+输入："今天太开心了！我终于考上了理想的大学！"
+输出：
+json
 {
-  "imagePrompt": "solid black fill style, pure white background, minimalist, flat design, trophy icon",
-  "themeColor": "#FFB900"
+  "imagePrompt": "solid black fill style, pure white background, minimalist, flat design, no other colors allowed except black and white, person jumping for joy, graduation cap, university building silhouette",
+  "themeColor": "#10B981",
+  "colors": [
+    {"emotion": "极度开心", "color": "#10B981", "proportion": 1.0}
+  ]
+}
+example 2：两种情绪（8:2 比例）
+输入："下雪天我坐在屋子里喝热咖啡，外面很冷，但心里很暖"
+输出：
+json
+{
+  "imagePrompt": "solid black fill style, pure white background, minimalist, flat design, no other colors allowed except black and white, person sitting by the window, steaming coffee cup, falling snowflakes outside",
+  "themeColor": "#F97316",
+  "colors": [
+    {"emotion": "温暖舒适", "color": "#F97316", "proportion": 0.8},
+    {"emotion": "宁静寒冷", "color": "#0EA5E9", "proportion": 0.2}
+  ]
+}
+example 3：三种情绪（6:3:1 比例）
+输入："我今天去了乡村，那里有鸡鸭牛羊很多动物，在田野里我快乐的奔跑，无忧无虑，空气非常清新"
+输出：
+json
+{
+  "imagePrompt": "solid black fill style, pure white background, minimalist, flat design, no other colors allowed except black and white, person running joyfully in the field, rural animals (chickens, ducks, cows, sheep), vast farmland, swaying grass blades",
+  "themeColor": "#22C55E",
+  "colors": [
+    {"emotion": "自由快乐", "color": "#22C55E", "proportion": 0.6},
+    {"emotion": "清新宁静", "color": "#0EA5E9", "proportion": 0.3},
+    {"emotion": "温暖治愈", "color": "#F59E0B", "proportion": 0.1}
+  ]
 }
 
-如果不知道如何回答，直接输出 Example 的内容。
-现在，请处理以下输入：
-{{用户输入的日记文本}}"""
+        如果不知道如何回答，直接输出 类似Example 的处理方式的内容。
+        现在，请处理以下输入：
+        {{用户输入的日记文本}}"""
 
 
 # ═══════════════════════════════════════════════════
@@ -147,15 +211,40 @@ Output:
 # ═══════════════════════════════════════════════════
 class DiaryRequest(BaseModel):
     text: str
-    style: str = "silhouette"   # silhouette | detailed
+    style: str = "silhouette"
 
 
 class AnalysisResponse(BaseModel):
     success: bool
     imagePrompt: str = ""
     themeColor: str = ""
+    colors: list = []
     imageUrl: str = ""
     error: str = ""
+
+
+def parse_json_safe(raw_str: str) -> dict:
+    """安全解析 LLM 返回的 JSON"""
+    s = raw_str.strip()
+    if s.startswith("```"):
+        s = s.split("\n", 1)[-1]
+        if s.endswith("```"):
+            s = s[:-3]
+        s = s.strip()
+        if s.lower().startswith("json"):
+            s = s[4:].strip()
+    try:
+        return json.loads(s)
+    except json.JSONDecodeError:
+        lbrace = s.find("{")
+        if lbrace >= 0:
+            decoder = json.JSONDecoder()
+            try:
+                parsed, _ = decoder.raw_decode(s[lbrace:])
+                return parsed
+            except json.JSONDecodeError:
+                pass
+        return {}
 
 
 # ═══════════════════════════════════════════════════
@@ -170,66 +259,45 @@ async def analyze_diary(req: DiaryRequest):
 
     logger.info(f"[分析] 收到文本: {text[:80]}...")
 
-    # ── 1. LLM 分析 (带重试) ──────────────────
+    # ── 1. 文本分析 (一步输出 imagePrompt + themeColor) ──
     try:
         llm_resp = call_llm_with_retry(messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": ANALYSIS_PROMPT},
             {"role": "user", "content": text},
         ])
 
         raw = llm_resp.choices[0].message.content
         if not raw or raw.strip() == "":
-            raise RuntimeError("LLM 返回空内容，请重试")
+            raise RuntimeError("LLM 返回空内容")
 
-        # 防御性解析：尝试多轮修复
-        parsed = None
-        raw_cleaned = raw.strip()
-        # 去掉 markdown 代码块包裹
-        if raw_cleaned.startswith("```"):
-            raw_cleaned = raw_cleaned.split("\n", 1)[-1]
-            if raw_cleaned.endswith("```"):
-                raw_cleaned = raw_cleaned[:-3]
-            raw_cleaned = raw_cleaned.strip()
-            if raw_cleaned.lower().startswith("json"):
-                raw_cleaned = raw_cleaned[4:].strip()
+        parsed = parse_json_safe(raw)
+        image_prompt = parsed.get("imagePrompt", "")
+        theme_color = parsed.get("themeColor", "")
+        colors = parsed.get("colors", [])
 
-        try:
-            parsed = json.loads(raw_cleaned)
-        except json.JSONDecodeError:
-            # 再试：用 raw_decode 提取第一个完整 JSON 对象
-            lbrace = raw_cleaned.find("{")
-            if lbrace >= 0:
-                decoder = json.JSONDecoder()
-                try:
-                    parsed, _ = decoder.raw_decode(raw_cleaned[lbrace:])
-                except json.JSONDecodeError:
-                    parsed = None
-            if not parsed:
-                raise RuntimeError(f"LLM 返回非 JSON: {raw_cleaned[:200]}")
-
-        image_prompt = parsed.get("imagePrompt", "") or parsed.get("生图提示词", "")
-        theme_color = parsed.get("themeColor", "") or parsed.get("颜色", {})
-
-        # 如果 themeColor 是对象，取第一个值
         if isinstance(theme_color, dict):
-            theme_color = list(theme_color.keys())[0] if theme_color else "#803E4D"
-
+            theme_color = list(theme_color.keys())[0] if theme_color else "#A8B4A5"
+        if not theme_color or theme_color in ("#000000", "#FFFFFF") or not isinstance(theme_color, str) or not theme_color.startswith("#"):
+            theme_color = "#A8B4A5"
         if not image_prompt:
-            # 最终退路：用用户原话做提示词
-            logger.warning("[LLM] 未返回 imagePrompt，使用退路")
-            image_prompt = f"solid black fill style, pure white background, minimalist, flat design, {text}"
+            image_prompt = f"solid black fill style, pure white background, minimalist, flat design, no other colors allowed except black and white, {text}"
+        if not isinstance(colors, list):
+            colors = []
+        try:
+            total = sum(c.get("proportion", 0) for c in colors if isinstance(c, dict))
+            if colors and abs(total - 1.0) > 0.01:
+                logger.warning(f"[分析] colors 比例之和={total}，不等于1.0，自动归一化")
+                for c in colors:
+                    if isinstance(c, dict) and "proportion" in c:
+                        c["proportion"] = c["proportion"] / total
+        except Exception:
+            pass
 
-        if not theme_color or not isinstance(theme_color, str) or not theme_color.startswith("#"):
-            theme_color = "#803E4D"
-
-        logger.info(f"[分析] 意象提示词: {image_prompt[:80]}...")
-        logger.info(f"[分析] 主题色: {theme_color}")
+        logger.info(f"[分析] themeColor: {theme_color}, colors: {len(colors)}个, 提示词: {image_prompt[:80]}...")
 
     except Exception as e:
-        logger.error(f"[LLM 失败] {e}")
-        return JSONResponse(
-            content={"success": False, "error": f"LLM 分析失败: {str(e)}"}
-        )
+        logger.error(f"[分析失败] {e}")
+        return JSONResponse(content={"success": False, "error": f"文本分析失败: {str(e)}"})
 
     # ── 2. 生图 (重试机制) ──
     try:
@@ -255,6 +323,7 @@ async def analyze_diary(req: DiaryRequest):
                 "success": False,
                 "imagePrompt": image_prompt,
                 "themeColor": theme_color,
+                "colors": colors,
                 "error": f"生图失败: {str(e)}",
             }
         )
@@ -264,7 +333,8 @@ async def analyze_diary(req: DiaryRequest):
         success=True,
         imagePrompt=image_prompt,
         themeColor=theme_color,
-        imageUrl=final_url,
+        colors=colors,
+        imageUrl=final_url
     )
 
 
@@ -286,6 +356,14 @@ async def global_exception_handler(request, exc):
         status_code=500,
         content={"success": False, "error": str(exc)},
     )
+
+
+# ── 静态文件托管（前端）──
+from fastapi.staticfiles import StaticFiles
+import os.path as _osp
+_frontend_dir = _osp.join(BASE_DIR, "..", "frontend")
+if _osp.isdir(_frontend_dir):
+    app.mount("/", StaticFiles(directory=_frontend_dir, html=True), name="frontend")
 
 
 if __name__ == "__main__":

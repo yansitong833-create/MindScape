@@ -11,10 +11,11 @@
     <!-- ═════════════ 左栏：时间轴 ═════════════ -->
     <aside id="left-panel">
       <div class="sidebar-nav">
-        <div class="year">2024</div>
+        <div class="year">2026</div>
         <ul class="months" id="month-list">
-          <li class="active" data-month="02">02</li>
-          <li data-month="01">01</li>
+          <li class="active" data-month="05">05</li>
+          <li data-month="04">04</li>
+          <li data-month="03">03</li>
         </ul>
       </div>
       <div class="diary-list-container">
@@ -26,15 +27,17 @@
     <!-- ═════════════ 右栏：3D 粒子 ═════════════ -->
     <main id="right-panel">
       <div id="title">MindScape</div>
+      <div id="title-sub">你的情绪，自有形状</div>
       <canvas id="mindscape-canvas"></canvas>
       <div id="input-container">
-        <input id="diaryInput" type="text" placeholder="这一刻，你在想什么？" autocomplete="off">
+        <input id="diaryInput" type="text" placeholder="今天有什么想说给自己听的？" autocomplete="off">
       </div>
     </main>
   </div>
 
   <script src="libs/three.min.js"></script>
   <script src="libs/gsap.min.js"></script>
+  <script src="config.js"></script>
   <script src="main.js"></script>
 </body>
 </html>

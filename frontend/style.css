@@ -169,6 +169,18 @@ html, body {
   pointer-events: none;
 }
 
+#title-sub {
+  position: absolute;
+  top: 70px; left: 40px;
+  z-index: 10;
+  color: #8C7A6B;
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
 #input-container {
   position: absolute;
   bottom: 60px;
@@ -196,7 +208,7 @@ html, body {
 }
 
 #diaryInput::placeholder {
-  color: rgba(140, 122, 107, 0.32);
+  color: rgba(140, 122, 107, 0.48);
 }
 
 #diaryInput:focus {

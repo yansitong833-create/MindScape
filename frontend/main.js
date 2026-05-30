@@ -1,44 +1,60 @@
 // ═══════════════════════════════════════════
 // MindScape 后端 API 地址
-// 本地开发: http://localhost:8000
+// 本地开发: http://localhost:8000/api
 // 生产环境: 同域 /api （Nginx 反向代理）
 // ═══════════════════════════════════════════
+const MINDSCAPE_DEFAULT_API_URL = (function() {
+  const h = window.location.hostname;
+  if (h === "localhost" || h === "127.0.0.1") {
+    return "http://localhost:8000/api";
+  }
+  return "/api";
+})();
 const MINDSCAPE_API_URL = typeof MINDSCAPE_API_OVERRIDE !== "undefined"
   ? MINDSCAPE_API_OVERRIDE
-  : "/api";
+  : MINDSCAPE_DEFAULT_API_URL;
 
 // ═══════════════════════════════════════════════
 // 左栏 时间轴 — 10+ 条诗意日记 + 状态记忆
 // ═══════════════════════════════════════════════
 const mockDiaries = [
-  { date: "02.14", text: "雨后的街道有泥土的芬芳，慢慢走回家的路上心情特别好。", color: "#8C9E82", generatedImageUrl: null, themeColor: null },
-  { date: "02.11", text: "喝到了一杯完美的焦糖玛奇朵，甜得像恋爱。", color: "#C49B7A", generatedImageUrl: null, themeColor: null },
-  { date: "02.07", text: "今天看到了很美的晚霞，买了一束郁金香。", color: "#E08F81", generatedImageUrl: null, themeColor: null },
-  { date: "02.04", text: "工作有些疲惫，但朋友突然发来一张好笑的表情包。", color: "#A8B4A5", generatedImageUrl: null, themeColor: null },
-  { date: "02.01", text: "看着窗外的落叶发呆，什么也不想做，就这样刚刚好。", color: "#B8A890", generatedImageUrl: null, themeColor: null },
-  { date: "01.28", text: "安静地看了一下午的书，时间好像变慢了。", color: "#6C7A89", generatedImageUrl: null, themeColor: null },
-  { date: "01.24", text: "和朋友一起去了新开的画廊，灵感像泉水一样涌出来。", color: "#C4A882", generatedImageUrl: null, themeColor: null },
-  { date: "01.22", text: "下雪了，整个世界都安静下来，泡了一杯热可可。", color: "#8FA9BF", generatedImageUrl: null, themeColor: null },
-  { date: "01.18", text: "早上被阳光叫醒，第一次没有按掉闹钟。", color: "#DFC98A", generatedImageUrl: null, themeColor: null },
-  { date: "01.15", text: "新的一年开始了，在日记本上写下了今年的三个心愿。", color: "#D4C5C7", generatedImageUrl: null, themeColor: null },
-  { date: "01.10", text: "今天什么也没发生，但就是觉得莫名开心。", color: "#C0B9D4", generatedImageUrl: null, themeColor: null },
-  { date: "01.06", text: "在二手书店淘到了一本泛黄的诗集，扉页上有人写过字。", color: "#A8978C", generatedImageUrl: null, themeColor: null },
+  { id: 21, date: "05.28", text: "五月末了，窗外的梧桐叶已经很大一片了，像绿色的手掌。", color: "#6B8E6B", generatedImageUrl: null, themeColor: null },
+  { id: 20, date: "05.25", text: "去了海边，赤脚踩在沙子上，像回到小时候的夏天。", color: "#5D8AA8", generatedImageUrl: null, themeColor: null },
+  { id: 19, date: "05.22", text: "买了一支新的钢笔，墨绿的颜色很好看，写字都变得认真了。", color: "#4A6B5D", generatedImageUrl: null, themeColor: null },
+  { id: 18, date: "05.18", text: "阳台上的茉莉开了第一朵花，整个房间都是淡淡的香。", color: "#F0E8D8", generatedImageUrl: null, themeColor: null },
+  { id: 17, date: "05.15", text: "给自己做了一顿很丰盛的早午餐，慢悠悠吃到中午。", color: "#E8C9A0", generatedImageUrl: null, themeColor: null },
+  { id: 16, date: "05.12", text: "今天穿了最喜欢的那条碎花裙，心情也跟着轻快起来。", color: "#D4A5A5", generatedImageUrl: null, themeColor: null },
+  { id: 15, date: "05.08", text: "下班后绕远路走回家，发现了一条开满蔷薇的小巷。", color: "#C96A6A", generatedImageUrl: null, themeColor: null },
+  { id: 14, date: "05.05", text: "立夏那天吃了西瓜，特别甜，像把整个夏天的味道都尝到了。", color: "#E07A5F", generatedImageUrl: null, themeColor: null },
+  { id: 13, date: "05.02", text: "五月第一天上班，路上阳光很好，小鸟在电线杆上唱歌。", color: "#F4A460", generatedImageUrl: null, themeColor: null },
+  { id: 12, date: "04.28", text: "四月快要结束了，晚上听见了今年的第一声蛙鸣。", color: "#7B9E7B", generatedImageUrl: null, themeColor: null },
+  { id: 11, date: "04.24", text: "下雨天窝在沙发里看书，外面淅淅沥沥的，里面安安静静的。", color: "#8B8C7A", generatedImageUrl: null, themeColor: null },
+  { id: 10, date: "04.20", text: "好朋友寄来了一盒手工饼干，拆开的时候像拆一封书信。", color: "#C9A87C", generatedImageUrl: null, themeColor: null },
+  { id: 9,  date: "04.16", text: "换了新香水，是清冷的木质调，像雨后的森林。", color: "#6A7B76", generatedImageUrl: null, themeColor: null },
+  { id: 8,  date: "04.12", text: "路过花店看到一束超美的芍药，粉粉的一大团，犹豫了很久还是买了。", color: "#E8A0BF", generatedImageUrl: null, themeColor: null },
+  { id: 7,  date: "04.08", text: "春天好像真的来了，风吹在脸上是暖的，带着一点点花香。", color: "#C5D5C5", generatedImageUrl: null, themeColor: null },
+  { id: 6,  date: "04.04", text: "今天没什么特别的事，就是觉得活着挺好的。", color: "#B8C5B8", generatedImageUrl: null, themeColor: null },
+  { id: 5,  date: "04.01", text: "四月的第一天，愚人节也没人骗我，不知道该高兴还是失落。", color: "#D4A5C4", generatedImageUrl: null, themeColor: null },
+  { id: 4,  date: "03.28", text: "整理衣柜，把冬天的衣服收起来，看着它们觉得好安心。", color: "#A8B4A5", generatedImageUrl: null, themeColor: null },
+  { id: 3,  date: "03.24", text: "室友煮了红豆汤，整个公寓都是甜甜暖暖的味道。", color: "#C49A76", generatedImageUrl: null, themeColor: null },
+  { id: 2,  date: "03.18", text: "下班路上看到一只很胖的橘猫趴在花坛边上，蹲下来看了好久。", color: "#D49A89", generatedImageUrl: null, themeColor: null },
+  { id: 1,  date: "03.10", text: "三月份的春天还是很任性，今天突然降温，又穿上了厚外套。", color: "#9EB5C6", generatedImageUrl: null, themeColor: null },
 ];
 
-let currentActiveDiaryIndex = 2;
-let currentMonth = "02";
+let currentActiveDiaryId = null;
+let currentMonth = "05";
 
-function renderTimeline() {
+function renderDiaryList() {
   const listContainer = document.getElementById("diary-list");
   if (!listContainer) return;
   listContainer.innerHTML = "";
 
-  mockDiaries.forEach((diary, idx) => {
+  mockDiaries.forEach(diary => {
     if (!diary.date.startsWith(currentMonth)) return;
 
     const item = document.createElement("div");
     item.className = "diary-item";
-    if (idx === currentActiveDiaryIndex) item.classList.add("active");
+    if (diary.id === currentActiveDiaryId) item.classList.add("active");
     item.innerHTML = `
       <div class="diary-date">${diary.date}</div>
       <div class="diary-content">
@@ -46,47 +62,46 @@ function renderTimeline() {
         <div class="diary-text">${diary.text}</div>
       </div>
       <button class="btn-delete" title="删除">🗑</button>`;
-    item.querySelector(".diary-item, .diary-item *"); // no-op to find
 
     item.addEventListener("click", (ev) => {
       if (ev.target.closest(".btn-delete")) return;
-      selectDiary(idx);
+      selectDiaryById(diary.id);
     });
     item.querySelector(".btn-delete").addEventListener("click", (ev) => {
       ev.stopPropagation();
-      deleteDiary(idx);
+      deleteDiaryById(diary.id);
     });
     listContainer.appendChild(item);
   });
 }
 
-function deleteDiary(idx) {
+function deleteDiaryById(id) {
+  const idx = mockDiaries.findIndex(d => d.id === id);
+  if (idx === -1) return;
   mockDiaries.splice(idx, 1);
-  if (idx <= currentActiveDiaryIndex && currentActiveDiaryIndex >= mockDiaries.length) {
-    currentActiveDiaryIndex = Math.max(0, mockDiaries.length - 1);
+  if (currentActiveDiaryId === id) {
+    currentActiveDiaryId = mockDiaries.length > 0 ? mockDiaries[0].id : null;
   }
-  renderTimeline();
+  renderDiaryList();
   if (mockDiaries.length === 0) {
     disperseAndClear();
     document.getElementById("diaryInput").value = "";
   } else {
-    selectDiary(Math.min(currentActiveDiaryIndex, mockDiaries.length - 1));
+    selectDiaryById(currentActiveDiaryId);
   }
 }
 
-function selectDiary(idx) {
-  if (idx < 0 || idx >= mockDiaries.length) return;
-  currentActiveDiaryIndex = idx;
-  const diary = mockDiaries[idx];
+function selectDiaryById(id) {
+  const diary = mockDiaries.find(d => d.id === id);
+  if (!diary) return;
+  currentActiveDiaryId = id;
   document.querySelectorAll(".diary-item").forEach(el => el.classList.remove("active"));
   const items = document.querySelectorAll(".diary-item");
-  let visibleIdx = 0;
-  for (let i = 0; i <= idx; i++) {
-    if (mockDiaries[i].date.startsWith(currentMonth)) visibleIdx++;
-  }
-  if (items.length > visibleIdx - 1 && items[visibleIdx - 1]) {
-    items[visibleIdx - 1].classList.add("active");
-  }
+  items.forEach(el => {
+    if (el.querySelector(".diary-text") && el.querySelector(".diary-text").textContent === diary.text) {
+      el.classList.add("active");
+    }
+  });
 
   if (diary.generatedImageUrl) {
     loadSavedParticle(diary.generatedImageUrl, diary.themeColor);
@@ -99,6 +114,54 @@ function selectDiary(idx) {
 }
 
 // 月份切换
+document.addEventListener("DOMContentLoaded", () => {
+  renderDiaryList();
+
+  const first05 = mockDiaries.find(d => d.date.startsWith("05"));
+  if (first05) selectDiaryById(first05.id);
+
+  document.querySelectorAll("#month-list li").forEach(li => {
+    li.addEventListener("click", () => {
+      document.querySelectorAll("#month-list li").forEach(l => l.classList.remove("active"));
+      li.classList.add("active");
+      currentMonth = li.dataset.month;
+      renderDiaryList();
+      const firstInMonth = mockDiaries.find(d => d.date.startsWith(currentMonth));
+      if (firstInMonth) selectDiaryById(firstInMonth.id);
+    });
+  });
+
+  document.getElementById("btn-add-diary").addEventListener("click", () => {
+    const newId = Date.now();
+    const today = new Date();
+    const newDateStr = "05." + String(today.getDate()).padStart(2, '0');
+
+    mockDiaries.unshift({
+      id: newId,
+      date: newDateStr,
+      text: "等待记录的心情...",
+      color: "#cccccc",
+      generatedImageUrl: null,
+      themeColor: null,
+    });
+
+    currentMonth = "05";
+    document.querySelectorAll("#month-list li").forEach(li => {
+      li.classList.toggle("active", li.dataset.month === "05");
+    });
+
+    currentActiveDiaryId = newId;
+    renderDiaryList();
+
+    disposeCurrentParticleSystem();
+    initNebula();
+
+    const input = document.getElementById("diaryInput");
+    input.value = "";
+    input.disabled = false;
+    input.focus();
+  });
+});// 月份切换
 document.addEventListener("DOMContentLoaded", () => {
   renderTimeline();
 
@@ -122,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
       date: mm + "." + dd, text: "", color: "#D4C5C7",
       generatedImageUrl: null, themeColor: null,
     });
-    currentActiveDiaryIndex = 0;
+    currentActiveDiaryId = 0;
     if (mm !== currentMonth) {
       currentMonth = mm;
       document.querySelectorAll("#month-list li").forEach(l => {
@@ -165,21 +228,30 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setClearColor(0xF9F6F0);
 
 // ═══════════════════════════════════════════
-// 全局鼠标 3D 空间追踪
+// 全局鼠标 3D 空间追踪（基于 right-panel canvas，排除左侧边栏偏移）
 // ═══════════════════════════════════════════
 const raycaster = new THREE.Raycaster();
 const mousePlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
 const mouseWorld = new THREE.Vector3(9999, 9999, 0);
 const mouseNDC = new THREE.Vector2();
 
+const _updateMouseNDC = (clientX, clientY) => {
+  const rect = rightPanel ? rightPanel.getBoundingClientRect() : null;
+  if (rect) {
+    mouseNDC.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    mouseNDC.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  } else {
+    mouseNDC.x = (clientX / window.innerWidth) * 2 - 1;
+    mouseNDC.y = -(clientY / window.innerHeight) * 2 + 1;
+  }
+};
+
 window.addEventListener("mousemove", (event) => {
-  mouseNDC.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouseNDC.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  _updateMouseNDC(event.clientX, event.clientY);
 });
 window.addEventListener("touchmove", (e) => {
   if (e.touches.length) {
-    mouseNDC.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
-    mouseNDC.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
+    _updateMouseNDC(e.touches[0].clientX, e.touches[0].clientY);
   }
 }, { passive: true });
 
@@ -418,27 +490,27 @@ class ImageToParticles {
 
     const tex = createParticleTexture();
 
-    // 光晕层：大粒子低透明度
+    // 光晕层
     const matGlow = new THREE.PointsMaterial({
-      size: 0.70,
+      size: 0.50,
       map: tex,
       color: 0xffffff,
       vertexColors: true,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.16,
       depthWrite: false,
       blending: THREE.NormalBlending,
       sizeAttenuation: true,
     });
 
-    // 锐利核心层：小粒子高透明度
+    // 锐利核心层
     const matCore = new THREE.PointsMaterial({
-      size: 0.28,
+      size: 0.22,
       map: tex,
       color: 0xffffff,
       vertexColors: true,
       transparent: true,
-      opacity: 0.82,
+      opacity: 0.88,
       depthWrite: false,
       blending: THREE.NormalBlending,
       sizeAttenuation: true,
@@ -772,6 +844,7 @@ async function analyzeAndGenerate(text) {
     }
 
     console.log("[MindScape] API 返回成功:", data.themeColor);
+    console.log("[MindScape] API 返回成功:", data.themeColor);
     return { imageUrl: data.imageUrl, themeColor: data.themeColor };
 
   } catch (error) {
@@ -806,7 +879,7 @@ function disposeCurrentParticleSystem() {
 async function loadSavedParticle(imageUrl, themeColor) {
   disposeCurrentParticleSystem();
   const color = themeColor || "#803E4D";
-  particleSystem = new ImageToParticles(imageUrl, { step: 8, nebulaRadius: 14 });
+  particleSystem = new ImageToParticles(imageUrl, { step: 6, nebulaRadius: 14 });
   try {
     const pts = await particleSystem.init();
     scene.add(pts);
@@ -895,7 +968,7 @@ diaryInput.addEventListener("keydown", async (e) => {
 
   // ④ 用新图创建新粒子系统
   const color = result.themeColor || "#803E4D";
-  particleSystem = new ImageToParticles(result.imageUrl, { step: 8, nebulaRadius: 14 });
+  particleSystem = new ImageToParticles(result.imageUrl, { step: 6, nebulaRadius: 14 });
   try {
     const pts = await particleSystem.init();
     scene.add(pts);
@@ -912,7 +985,7 @@ diaryInput.addEventListener("keydown", async (e) => {
   diaryInput.disabled = false;
 
   // ⑤ 状态记忆
-  const currentDiary = mockDiaries[currentActiveDiaryIndex];
+  const currentDiary = mockDiaries.find(d => d.id === currentActiveDiaryId);
   if (currentDiary) {
     currentDiary.generatedImageUrl = result.imageUrl;
     currentDiary.themeColor = color;
@@ -953,7 +1026,7 @@ diaryInput.addEventListener("keydown", async (e) => {
       }
 
       // 创建新粒子系统
-      particleSystem = new ImageToParticles(decodedUrl, { step: 8, nebulaRadius: 14 });
+      particleSystem = new ImageToParticles(decodedUrl, { step: 6, nebulaRadius: 14 });
       try {
         const pts = await particleSystem.init();
         scene.add(pts);
@@ -967,15 +1040,6 @@ diaryInput.addEventListener("keydown", async (e) => {
     console.error("[MindScape] URL 模式初始化失败:", err);
   });
 })();
-
-// ── 渲染循环 ──
-function animate() {
-  requestAnimationFrame(animate);
-  if (particleSystem) particleSystem.updatePhysics();
-  renderer.render(scene, camera);
-}
-animate();
-
 
 // ── 渲染循环 ──
 function animate() {
