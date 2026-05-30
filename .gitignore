@@ -1,2 +1,13 @@
-# 包含 API Key 的配置文件
-config.js
+# API Key 配置文件
+frontend/config.js
+backend/.env
+
+# Node
+miniapp/node_modules/
+miniapp/.swc/
+miniapp/dist/
+
+# Python
+__pycache__/
+*.pyc
+backend/venv/
