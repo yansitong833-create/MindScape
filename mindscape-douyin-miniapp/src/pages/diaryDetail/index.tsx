@@ -7,8 +7,11 @@ import Card from '@/components/Card';
 import PrimaryButton from '@/components/PrimaryButton';
 import EmptyState from '@/components/EmptyState';
 import { useDiaryStore } from '@/store/useDiaryStore';
+import { useApplyTheme } from '@/hooks/useApplyTheme';
 
 const DiaryDetailPage: React.FC = () => {
+  const { primary } = useApplyTheme();
+
   const router = useRouter();
   const id = useMemo(() => (router.params?.id ? decodeURIComponent(router.params.id) : ''), [router.params]);
 
@@ -38,12 +41,20 @@ const DiaryDetailPage: React.FC = () => {
   return (
     <View className={styles.container}>
       <View className={styles.content}>
+        <View className={styles.topBar}>
+          <Text className={styles.back} onClick={backToList}>
+            ‹ 返回
+          </Text>
+          <Text className={styles.barTitle}>日记详情</Text>
+          <View className={styles.barRight} />
+        </View>
+
         {!entry ? (
           <EmptyState title="找不到这条日记" description="可能已经被删除，或链接参数无效。" />
         ) : (
           <Card title="">
             <View className={styles.metaRow}>
-              <View className={styles.mood}>
+              <View className={styles.mood} style={{ background: primary }}>
                 <Text>{entry.mood}</Text>
               </View>
               <Text className={styles.time}>{dayjs(entry.createdAt).format('YYYY-MM-DD HH:mm')}</Text>

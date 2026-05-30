@@ -11,6 +11,7 @@
 }
 
 .title {
+  display: block;
   font-size: $font-size-lg;
   font-weight: $font-weight-semibold;
   color: $color-text-primary;
@@ -18,6 +19,7 @@
 }
 
 .desc {
+  display: block;
   font-size: $font-size-sm;
   color: $color-text-tertiary;
   line-height: $line-height-loose;

@@ -4,7 +4,7 @@
   min-height: 100vh;
   padding: $spacing-xl $page-padding $spacing-xl;
   box-sizing: border-box;
-  background: linear-gradient(180deg, #f6f5ff 0%, #ffffff 100%);
+  background: $color-bg-card;
 }
 
 .content {
@@ -26,12 +26,68 @@
   margin-top: $spacing-sm;
 }
 
+.list {
+  width: 100%;
+  max-width: $max-content-width;
+  border-radius: $radius-lg;
+  border: 2rpx solid $color-border;
+  overflow: hidden;
+}
+
+.item {
+  width: 100%;
+  background: $color-bg-card;
+  padding: $spacing-lg;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all $transition-fast;
+}
+
+.item+.item {
+  border-top: 2rpx solid $color-divider;
+}
+
+.itemLeft {
+  min-width: 0;
+}
+
+.itemTitle {
+  display: block;
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  @include text-ellipsis;
+}
+
+.itemDesc {
+  display: block;
+  margin-top: $spacing-sm;
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  @include text-ellipsis;
+}
+
+.itemRight {
+  display: flex;
+  align-items: center;
+  color: $color-text-tertiary;
+  font-size: $font-size-sm;
+  white-space: nowrap;
+}
+
+.chevron {
+  margin-left: $spacing-sm;
+  color: $color-text-tertiary;
+}
+
 .field {
   width: 100%;
   max-width: $max-content-width;
   background: $color-bg-card;
   border-radius: $radius-lg;
-  box-shadow: $shadow-card;
+  border: 2rpx solid $color-border;
   padding: $spacing-lg;
   box-sizing: border-box;
 }

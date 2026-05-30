@@ -4,7 +4,7 @@
   min-height: 100vh;
   padding: $spacing-xl $page-padding $spacing-xl;
   box-sizing: border-box;
-  background: linear-gradient(180deg, #f0f5ff 0%, $color-bg-page 44%, #ffffff 100%);
+  background: $color-bg-card;
 }
 
 .content {
@@ -24,6 +24,7 @@
 }
 
 .title {
+  display: block;
   font-size: $font-size-xxl;
   font-weight: $font-weight-semibold;
   color: $color-text-primary;
@@ -31,7 +32,8 @@
 }
 
 .subtitle {
-  margin-top: $spacing-sm;
+  display: block;
+  margin-top: $spacing-md;
   font-size: $font-size-md;
   color: $color-text-tertiary;
   line-height: $line-height-loose;
@@ -46,42 +48,145 @@
   margin-top: $spacing-sm;
 }
 
-.quickInput {
+.calendarSection {
   width: 100%;
   max-width: $max-content-width;
-  background: rgba(255, 255, 255, 0.72);
-  border: 2rpx solid rgba(229, 230, 235, 0.9);
-  border-radius: $radius-lg;
-  padding: $spacing-lg;
+}
+
+.calendarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-md;
+}
+
+.navBtn {
+  @include button-reset;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 999rpx;
+  border: 2rpx solid $color-border;
+  background: $color-bg-card;
+  font-size: $font-size-lg;
+  color: $color-text-primary;
+
+  &:active {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+}
+
+.monthText {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.weekRow {
+  display: flex;
+  align-items: center;
+  padding: 0 4rpx;
   box-sizing: border-box;
 }
 
-.moodRow {
-  display: flex;
-  flex-wrap: wrap;
-  margin-top: $spacing-md;
-  margin-left: -$spacing-sm;
+.weekCell {
+  width: 14.2857%;
+  text-align: center;
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  padding: $spacing-sm 0;
 }
 
-.moodItem {
-  margin-left: $spacing-sm;
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -4rpx;
+  margin-top: -4rpx;
+}
+
+.dayCell {
+  width: 14.2857%;
+  height: 96rpx;
+  padding-left: 4rpx;
+  padding-top: 4rpx;
+  box-sizing: border-box;
+}
+
+.dayBtn {
+  @include button-reset;
+  width: 100%;
+  height: 100%;
+  background: $color-bg-card;
+  border-radius: $radius-md;
+  border: 2rpx solid transparent;
+  box-sizing: border-box;
+}
+
+.dayInner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.dayText {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+}
+
+.dayRecords {
+  margin-top: $spacing-lg;
+  padding-top: $spacing-sm;
+}
+
+.sectionTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.emptyHint {
+  display: block;
+  margin-top: $spacing-sm;
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.recordList {
+  margin-top: $spacing-md;
+}
+
+.recordList> :not(:first-child) {
   margin-top: $spacing-sm;
 }
 
-.inputLabel {
-  font-size: $font-size-sm;
-  color: $color-text-secondary;
-  margin-bottom: $spacing-sm;
+.recordItem {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
 }
 
-.input {
-  width: 100%;
-  height: 88rpx;
-  border-radius: $radius-lg;
-  background: #ffffff;
-  border: 2rpx solid $color-border;
-  padding: 0 $spacing-md;
-  box-sizing: border-box;
+.recordBar {
+  width: 8rpx;
+  height: 40rpx;
+  border-radius: 999rpx;
+  margin-top: 8rpx;
+  flex-shrink: 0;
+}
+
+.recordText {
+  margin-left: $spacing-sm;
   font-size: $font-size-md;
-  align-items: center;
+  color: $color-text-primary;
+  line-height: $line-height-loose;
+  min-width: 0;
+  flex: 1;
+  @include text-ellipsis-multi(2);
+}
+
+.placeholder {
+  width: 100%;
+  height: 160rpx;
 }

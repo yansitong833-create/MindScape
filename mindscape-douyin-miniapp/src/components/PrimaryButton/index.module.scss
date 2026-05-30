@@ -5,7 +5,7 @@
   height: $button-height-md;
   width: 100%;
   border-radius: $radius-button;
-  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  background: transparent;
   color: $color-text-white;
   font-size: $font-size-md;
   font-weight: $font-weight-semibold;
@@ -22,7 +22,7 @@
 
 .buttonSecondary {
   background: $color-bg-card;
-  color: $color-text-primary;
+  color: $color-text-secondary;
   border: 2rpx solid $color-border;
 }
 

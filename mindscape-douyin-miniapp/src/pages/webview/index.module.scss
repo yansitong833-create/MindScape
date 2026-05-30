@@ -2,7 +2,42 @@
 
 .container {
   min-height: 100vh;
-  background: $color-bg-page;
+  background: $color-bg-card;
+  display: flex;
+  flex-direction: column;
+}
+
+.topBar {
+  width: 100%;
+  padding: 0 $page-padding;
+  box-sizing: border-box;
+  height: 96rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2rpx solid $color-divider;
+}
+
+.back {
+  font-size: $font-size-md;
+  color: $color-text-secondary;
+  padding: $spacing-sm 0;
+}
+
+.barTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.barRight {
+  width: 120rpx;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.webView {
+  flex: 1;
 }
 
 .fallback {

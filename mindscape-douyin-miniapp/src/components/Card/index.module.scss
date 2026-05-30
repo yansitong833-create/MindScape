@@ -5,7 +5,7 @@
   max-width: $max-content-width;
   background: $color-bg-card;
   border-radius: $radius-lg;
-  box-shadow: $shadow-card;
+  border: 2rpx solid $color-border;
   padding: $spacing-lg;
   box-sizing: border-box;
 }
@@ -22,17 +22,22 @@
 }
 
 .title {
+  display: block;
   font-size: $font-size-lg;
   font-weight: $font-weight-semibold;
   color: $color-text-primary;
   line-height: $line-height-tight;
+  letter-spacing: 1rpx;
   @include text-ellipsis;
 }
 
 .subtitle {
+  display: block;
+  margin-top: $spacing-xs;
   font-size: $font-size-sm;
   color: $color-text-tertiary;
   line-height: $line-height-normal;
+  letter-spacing: 0.5rpx;
   @include text-ellipsis-multi(2);
 }
 

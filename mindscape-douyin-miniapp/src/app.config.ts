@@ -1,10 +1,12 @@
 export default defineAppConfig({
   pages: [
-    'pages/index/index',
     'pages/diary/index',
+    'pages/index/index',
     'pages/mine/index',
     'pages/webview/index',
-    'pages/diaryDetail/index'
+    'pages/diaryDetail/index',
+    'pages/diaryEdit/index',
+    'pages/theme/index'
   ],
   window: {
     backgroundTextStyle: 'light',
@@ -19,16 +21,16 @@ export default defineAppConfig({
     borderStyle: 'white',
     list: [
       {
-        pagePath: 'pages/index/index',
-        text: '首页'
-      },
-      {
         pagePath: 'pages/diary/index',
         text: '日记'
       },
       {
+        pagePath: 'pages/index/index',
+        text: '查阅'
+      },
+      {
         pagePath: 'pages/mine/index',
-        text: '我的'
+        text: '设置'
       }
     ]
   }
