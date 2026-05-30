@@ -1,0 +1,24 @@
+@use '@/styles/variables.scss' as *;
+
+.container {
+  width: 100%;
+  max-width: $max-content-width;
+  padding: $spacing-xl $spacing-lg;
+  border-radius: $radius-lg;
+  background: rgba(255, 255, 255, 0.6);
+  border: 2rpx dashed rgba(229, 230, 235, 0.9);
+  box-sizing: border-box;
+}
+
+.title {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-sm;
+}
+
+.desc {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  line-height: $line-height-loose;
+}

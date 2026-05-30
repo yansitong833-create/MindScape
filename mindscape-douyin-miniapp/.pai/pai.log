@@ -1,0 +1,23 @@
+[14:34:43.007] Server listening on port 3568, PID 44916
+[14:34:43.030] readProjectFiles, Found 44 files to read.
+[14:34:43.087] Starting PAI Cloud Dev...
+[14:34:44.420] [PAI SDK] createCloudSession response: {
+  "code": 0,
+  "msg": "success",
+  "sandboxId": "vefaas-f0vkicge-pyw70jixna-d8d8a182386ujq08oc40-sandbox",
+  "endpoint": "https://sd62opo6oqou1ckhsuo00.apigateway-cn-beijing.volceapi.com"
+}
+[14:34:44.919] [PAI SDK] cloudServer.start called, appId: pai-preview-trae-f7bf8bfb
+[14:34:45.571] [PAI SDK] Received event: log {"content":"\n> taro_template@1.0.0 dev:h5\n> npm run build:h5 -- --watch\n\n","timestamp":1780122886960}
+[14:34:45.822] [PAI SDK] Received event: log {"content":"\n> taro_template@1.0.0 build:h5\n> taro build --type h5 --watch\n\n","timestamp":1780122887215}
+[14:34:46.444] [PAI SDK] Received event: log {"content":"👽 Taro v4.1.9\n\n","timestamp":1780122887843}
+[14:34:48.624] [PAI SDK] Received event: log {"content":"Tips:\n1. 建议开启持久化缓存功能，能有效提升二次编译速度，详情请参考: https://docs.taro.zone/docs/config-detail#cache。\n\n\n","timestamp":1780122890024}
+[14:34:50.577] [PAI SDK] Received event: log {"content":"- 即将开始启动编译，请稍等~\n","timestamp":1780122891966}
+[14:35:06.539] [PAI SDK] Received event: log {"content":"✅  编译成功 5/30/2026, 2:35:07 PM\n\n","timestamp":1780122907912}
+[14:35:06.592] [PAI SDK] cloudServer.start response: {
+  "status": "running",
+  "msg": "Cloud Server started successfully.",
+  "hash": "pai-preview-trae-f7bf8bfb"
+}
+[14:35:13.895] [Preview Server] Frontend connected, clients size = 1
+[14:35:13.895] Sending cached status to new connection, lastStatusMessage = {"event":"status_change","message":{"url":"https://sd62opo6oqou1ckhsuo00.apigateway-cn-beijing.volceapi.com/?faasInstanceName=vefaas-f0vkicge-pyw70jixna-d8d8a182386ujq08oc40-sandbox&hash=pai-preview-trae-f7bf8bfb","schema":"aipa://preview?type=pai&aipa_id=pai-preview-trae-f7bf8bfb&uuid=0a5e9d67-e6a2-4b99-93f5-4c478ce73e85","status":"running","msg":"Cloud Server started successfully.","framework":"taro"}}
