@@ -1,15 +1,14 @@
 @use '@/styles/variables.scss' as *;
 
 .container {
-  min-height: 100vh;
-  padding: $spacing-xl $page-padding $spacing-xl;
-  box-sizing: border-box;
+  @include page-shell;
+  padding-top: $spacing-xl;
+  padding-bottom: $spacing-xl;
   background: $color-bg-card;
 }
 
 .topBar {
-  width: 100%;
-  max-width: $max-content-width;
+  @include page-inner;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -35,9 +34,9 @@
 }
 
 .content {
+  @include page-inner;
   display: flex;
   flex-direction: column;
-  align-items: center;
 }
 
 .content> :not(:first-child) {
@@ -46,16 +45,14 @@
 
 .title {
   display: block;
-  width: 100%;
-  max-width: $max-content-width;
+  @include page-inner;
   font-size: $font-size-sm;
   color: $color-text-tertiary;
   line-height: $line-height-loose;
 }
 
 .grid {
-  width: 100%;
-  max-width: $max-content-width;
+  @include page-inner;
   display: flex;
   flex-wrap: wrap;
   margin-left: -$spacing-sm;

@@ -1,8 +1,7 @@
 @use '@/styles/variables.scss' as *;
 
 .card {
-  width: 100%;
-  max-width: $max-content-width;
+  @include page-inner;
   background: $color-bg-card;
   border-radius: $radius-lg;
   border: 2rpx solid $color-border;

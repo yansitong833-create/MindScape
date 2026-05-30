@@ -1,19 +1,17 @@
 @use '@/styles/variables.scss' as *;
 
 .container {
-  min-height: 100vh;
-  padding: $spacing-xl $page-padding 160rpx;
-  box-sizing: border-box;
+  @include page-shell;
+  padding-top: $spacing-xl;
+  padding-bottom: 160rpx;
   background: $color-bg-card;
 }
 
 .topBar {
-  width: 100%;
-  max-width: $max-content-width;
+  @include page-inner;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 0 auto;
 }
 
 .back {
@@ -36,15 +34,12 @@
 }
 
 .body {
-  width: 100%;
-  margin: $spacing-lg auto 0;
-  max-width: $max-content-width;
+  @include page-inner;
+  margin-top: $spacing-lg;
 }
 
 .fab {
-  position: fixed;
-  right: $page-padding;
-  bottom: 110rpx;
+  @include fab-bottom-right;
   width: 104rpx;
   height: 104rpx;
   border-radius: 999rpx;

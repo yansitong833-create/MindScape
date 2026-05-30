@@ -8,6 +8,7 @@ import PrimaryButton from '@/components/PrimaryButton';
 import EmptyState from '@/components/EmptyState';
 import { useDiaryStore } from '@/store/useDiaryStore';
 import { useApplyTheme } from '@/hooks/useApplyTheme';
+import { hexToRgba } from '@/utils/color';
 
 const DiaryDetailPage: React.FC = () => {
   const { primary } = useApplyTheme();
@@ -53,13 +54,13 @@ const DiaryDetailPage: React.FC = () => {
           <EmptyState title="找不到这条日记" description="可能已经被删除，或链接参数无效。" />
         ) : (
           <Card title="">
-            <View className={styles.metaRow}>
-              <View className={styles.mood} style={{ background: primary }}>
-                <Text>{entry.mood}</Text>
-              </View>
+            <View
+              className={styles.detailBody}
+              style={{ backgroundColor: hexToRgba(entry.color, 0.14) }}
+            >
               <Text className={styles.time}>{dayjs(entry.createdAt).format('YYYY-MM-DD HH:mm')}</Text>
+              <Text className={styles.text}>{entry.content}</Text>
             </View>
-            <Text className={styles.text}>{entry.content}</Text>
           </Card>
         )}
 

@@ -1,8 +1,7 @@
 @use '@/styles/variables.scss' as *;
 
 .container {
-  width: 100%;
-  max-width: $max-content-width;
+  @include page-inner;
   padding: $spacing-xl $spacing-lg;
   border-radius: $radius-lg;
   background: rgba(255, 255, 255, 0.6);

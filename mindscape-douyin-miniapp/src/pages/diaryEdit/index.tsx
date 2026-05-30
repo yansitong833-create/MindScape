@@ -1,14 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, Textarea } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
+import classNames from 'classnames';
 import styles from './index.module.scss';
-import Tag from '@/components/Tag';
 import PrimaryButton from '@/components/PrimaryButton';
-import type { Mood } from '@/types/diary';
+import { DIARY_COLOR_OPTIONS, DEFAULT_DIARY_COLOR, normalizeDiaryColor } from '@/constants/diaryColors';
 import { useDiaryStore } from '@/store/useDiaryStore';
 import { useApplyTheme } from '@/hooks/useApplyTheme';
-
-const MOODS: Mood[] = ['平静', '开心', '低落', '焦虑', '疲惫'];
 
 const DiaryEditPage: React.FC = () => {
   const { primary } = useApplyTheme();
@@ -21,7 +19,7 @@ const DiaryEditPage: React.FC = () => {
   const updateEntry = useDiaryStore((s) => s.updateEntry);
 
   const [content, setContent] = useState<string>('');
-  const [mood, setMood] = useState<Mood>('平静');
+  const [color, setColor] = useState<string>(DEFAULT_DIARY_COLOR);
 
   const isEdit = Boolean(id);
 
@@ -30,7 +28,7 @@ const DiaryEditPage: React.FC = () => {
     const entry = getEntryById(id);
     if (!entry) return;
     setContent(entry.content);
-    setMood(entry.mood);
+    setColor(normalizeDiaryColor(entry.color));
   }, [getEntryById, id]);
 
   const goBack = () => {
@@ -44,14 +42,16 @@ const DiaryEditPage: React.FC = () => {
       return;
     }
 
+    const picked = normalizeDiaryColor(color);
+
     if (isEdit) {
-      updateEntry({ id, content: trimmed, mood });
+      updateEntry({ id, content: trimmed, color: picked });
       Taro.showToast({ title: '已保存', icon: 'success' });
       goBack();
       return;
     }
 
-    addEntry({ content: trimmed, mood });
+    addEntry({ content: trimmed, color: picked });
     Taro.showToast({ title: '已创建', icon: 'success' });
     goBack();
   };
@@ -71,21 +71,22 @@ const DiaryEditPage: React.FC = () => {
         <Textarea
           className={styles.textarea}
           value={content}
-          placeholder="写下今天的心情与发生的事…"
+          placeholder="写下今天发生的事…"
           maxlength={600}
           onInput={(e) => setContent(e.detail.value)}
         />
 
         <Text className={styles.label} style={{ marginTop: 24 }}>
-          情绪
+          颜色
         </Text>
-        <View className={styles.moodRow}>
-          {MOODS.map((m) => (
-            <View key={m} className={styles.moodItem}>
-              <Tag active={mood === m} onClick={() => setMood(m)}>
-                {m}
-              </Tag>
-            </View>
+        <View className={styles.colorRow}>
+          {DIARY_COLOR_OPTIONS.map((c) => (
+            <View
+              key={c}
+              className={classNames(styles.colorSwatch, color === c && styles.colorSwatchActive)}
+              style={{ backgroundColor: c }}
+              onClick={() => setColor(c)}
+            />
           ))}
         </View>
 

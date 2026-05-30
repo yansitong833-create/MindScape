@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { taroPersistStorage } from '@/utils/persistStorage';
 import type { ThemePreset } from '@/utils/theme';
+import { isPlaceholderH5Url } from '@/utils/particleCloudWebUrl';
 
 const STORAGE_KEY = 'mindscape:settings';
 
@@ -12,7 +13,8 @@ export interface SettingsState {
   setThemePreset: (preset: ThemePreset) => void;
 }
 
-const DEFAULT_WEB_URL = 'https://example.com/mindscape';
+/** H5 站点根地址（https），粒子云页部署在其下的 particle-cloud/ */
+const DEFAULT_WEB_URL = '';
 const DEFAULT_THEME_PRESET: ThemePreset = 'blue';
 
 export const useSettingsStore = create<SettingsState>()(
@@ -30,11 +32,15 @@ export const useSettingsStore = create<SettingsState>()(
         setItem: (name, value) => taroPersistStorage.setItem(name, value),
         removeItem: (name) => taroPersistStorage.removeItem(name),
       },
-      version: 2,
-      migrate: (persistedState) => {
+      version: 3,
+      migrate: (persistedState, version) => {
         const state = persistedState as Partial<SettingsState> | undefined;
+        let webUrl = state?.webUrl ?? DEFAULT_WEB_URL;
+        if (version < 3 && isPlaceholderH5Url(webUrl)) {
+          webUrl = DEFAULT_WEB_URL;
+        }
         return {
-          webUrl: state?.webUrl ?? DEFAULT_WEB_URL,
+          webUrl,
           themePreset: state?.themePreset ?? DEFAULT_THEME_PRESET,
         } as unknown as SettingsState;
       },

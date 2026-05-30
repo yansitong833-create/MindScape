@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text } from '@tarojs/components';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, Input } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
 import Card from '@/components/Card';
@@ -13,6 +13,20 @@ const SettingsPage: React.FC = () => {
   const { primary } = useApplyTheme();
 
   const themePreset = useSettingsStore((s) => s.themePreset);
+  const webUrl = useSettingsStore((s) => s.webUrl);
+  const setWebUrl = useSettingsStore((s) => s.setWebUrl);
+  const [h5Draft, setH5Draft] = useState(webUrl);
+
+  useEffect(() => {
+    setH5Draft(webUrl);
+  }, [webUrl]);
+
+  useEffect(() => {
+    if (webUrl && /example\.(com|org)/i.test(webUrl)) {
+      setWebUrl('');
+      Taro.showToast({ title: '已清除示例域名', icon: 'none' });
+    }
+  }, [setWebUrl, webUrl]);
 
   const entryCount = useDiaryStore((s) => s.entries.length);
   const clearAll = useDiaryStore((s) => s.clearAll);
@@ -62,6 +76,21 @@ const SettingsPage: React.FC = () => {
             </View>
           </View>
         </View>
+
+        <Text className={styles.sectionTitle} style={{ color: primary }}>粒子云（静态 HTML）</Text>
+        <Card title="H5 根地址" subtitle="须为 https，且已在抖音后台配置 webview 业务域名">
+          <Input
+            className={styles.h5Input}
+            type="text"
+            value={h5Draft}
+            placeholder="https://your-domain.com/mindscape"
+            onInput={(e) => setH5Draft(e.detail.value)}
+            onBlur={() => setWebUrl(h5Draft)}
+          />
+          <Text className={styles.hint}>
+            完全本地演示：执行 npm run build:tt:local-demo，无需填地址。可选：将 h5/static/ 部署到 HTTPS 作线上展示。
+          </Text>
+        </Card>
 
         <Text className={styles.sectionTitle} style={{ color: primary }}>数据</Text>
         <Card title="本机日记" subtitle={`当前保存 ${entryCount} 条`} headerRight={null}>

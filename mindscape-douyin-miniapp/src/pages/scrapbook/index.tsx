@@ -12,7 +12,6 @@ type ScopeParam = 'day' | 'month';
 const ScrapbookPage: React.FC = () => {
   const { primary } = useApplyTheme();
   const router = useRouter();
-
   const scope = useMemo<ScopeParam>(() => {
     const s = router.params?.scope as ScopeParam | undefined;
     return s === 'month' ? 'month' : 'day';

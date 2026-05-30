@@ -98,6 +98,31 @@ $transition-slow: 0.35s ease;
   justify-content: center;
 }
 
+// 页面根容器：设计稿宽度内水平居中，左右边距一致
+@mixin page-shell {
+  min-height: 100vh;
+  width: 100%;
+  max-width: $screen-width;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: $page-padding;
+  padding-right: $page-padding;
+  box-sizing: border-box;
+}
+
+// 页面内主内容区（占满 shell 内可用宽度）
+@mixin page-inner {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+// 悬浮按钮：与内容列右缘对齐（宽屏时仍贴内容区）
+@mixin fab-bottom-right($bottom: 110rpx) {
+  position: fixed;
+  bottom: $bottom;
+  right: calc(50% - #{$screen-width} / 2 + #{$page-padding});
+}
+
 // 横向滚动容器（微信小程序兼容）
 @mixin scroll-x-container {
   white-space: nowrap;

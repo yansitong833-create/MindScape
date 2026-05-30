@@ -1,0 +1,211 @@
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: #F9F6F0;
+  font-family: "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+#app {
+  display: flex;
+  width: 100vw; height: 100vh;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════
+   左栏：时间轴 (固定 400px)
+   ═══════════════════════════════════════════ */
+#left-panel {
+  flex: 0 0 400px;
+  display: flex;
+  border-right: 1px solid rgba(92, 75, 81, 0.1);
+  height: 100%;
+  color: #5C4B51;
+}
+
+.sidebar-nav {
+  padding: 40px 20px;
+  border-right: 1px solid rgba(92, 75, 81, 0.05);
+}
+
+.year {
+  font-size: 22px;
+  font-weight: 200;
+  margin-bottom: 40px;
+  letter-spacing: 0.12em;
+  color: #5C4B51;
+}
+
+.months {
+  list-style: none;
+  font-size: 13px;
+  opacity: 0.4;
+  line-height: 2.7;
+  letter-spacing: 0.08em;
+}
+
+.months .active {
+  opacity: 1;
+  font-weight: 500;
+  color: #5C4B51;
+}
+
+.diary-list-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 40px 30px;
+  position: relative;
+}
+
+.diary-list-container::-webkit-scrollbar { display: none; }
+
+/* ＋ 新日记按钮 */
+#btn-add-diary {
+  display: block;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: #5C4B51;
+  color: #F9F6F0;
+  border: none;
+  font-size: 24px; font-weight: 300;
+  cursor: pointer;
+  margin-bottom: 30px;
+  transition: transform 0.3s;
+}
+
+#btn-add-diary:hover { transform: rotate(90deg); }
+
+/* 日记条目 */
+.diary-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 52px;
+  cursor: pointer;
+  transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1),
+              opacity 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.diary-item:hover {
+  transform: translateX(8px);
+  opacity: 0.7;
+}
+
+/* 删除按钮 */
+.btn-delete {
+  display: none;
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: rgba(92, 75, 81, 0.3);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 8px;
+  transition: color 0.2s;
+}
+
+.diary-item:hover .btn-delete { display: block; }
+.btn-delete:hover { color: #C46A6A; }
+
+.diary-item.active .diary-text,
+.diary-item.active .diary-date {
+  font-weight: 600;
+  color: #5C4B51;
+}
+
+.diary-date {
+  font-size: 16px;
+  font-weight: 300;
+  width: 56px;
+  flex-shrink: 0;
+  color: #5C4B51;
+  letter-spacing: 0.06em;
+}
+
+.diary-content {
+  flex: 1;
+  border-left: 1px solid rgba(92, 75, 81, 0.12);
+  padding-left: 24px;
+}
+
+.diary-preview-circle {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  margin-bottom: 12px;
+  filter: blur(4px);
+}
+
+.diary-text {
+  font-size: 13px;
+  line-height: 1.8;
+  color: rgba(92, 75, 81, 0.72);
+  letter-spacing: 0.03em;
+}
+
+/* ═══════════════════════════════════════════
+   右栏：3D 粒子 + 输入框
+   ═══════════════════════════════════════════ */
+#right-panel {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+#mindscape-canvas {
+  display: block;
+  width: 100%; height: 100%;
+}
+
+#title {
+  position: absolute;
+  top: 40px; left: 40px;
+  z-index: 10;
+  color: #5C4B51;
+  font-size: 22px;
+  font-weight: 200;
+  letter-spacing: 0.16em;
+  pointer-events: none;
+}
+
+#input-container {
+  position: absolute;
+  bottom: 60px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  z-index: 10;
+}
+
+#diaryInput {
+  width: 440px;
+  max-width: 80%;
+  padding: 14px 28px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(140, 122, 107, 0.18);
+  border-radius: 50px;
+  outline: none;
+  color: #5C4B51;
+  font-size: 14px;
+  text-align: center;
+  letter-spacing: 0.05em;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  transition: all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+#diaryInput::placeholder {
+  color: rgba(140, 122, 107, 0.32);
+}
+
+#diaryInput:focus {
+  border-color: rgba(140, 122, 107, 0.4);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 24px rgba(92, 75, 81, 0.05),
+              inset 0 1px 4px rgba(140, 122, 107, 0.03);
+}
+
+#diaryInput:focus::placeholder {
+  color: rgba(140, 122, 107, 0.14);
+}

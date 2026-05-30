@@ -129,6 +129,8 @@ const png = Buffer.concat([
   chunk("IEND", Buffer.alloc(0)),
 ]);
 
-const outPath = path.join(__dirname, "..", "assets", "tower.png");
+const outDir = process.argv[2] ? path.resolve(process.argv[2]) : path.join(__dirname, "..", "assets");
+fs.mkdirSync(outDir, { recursive: true });
+const outPath = path.join(outDir, "tower.png");
 fs.writeFileSync(outPath, png);
-console.log(`✔ tower.png 生成完成 → ${(png.length / 1024).toFixed(1)} KB`);
+console.log(`✔ tower.png → ${outPath} (${(png.length / 1024).toFixed(1)} KB)`);

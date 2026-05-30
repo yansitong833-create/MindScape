@@ -10,7 +10,6 @@ import { useApplyTheme } from '@/hooks/useApplyTheme';
 const DiaryPage: React.FC = () => {
   const entries = useDiaryStore((s) => s.entries);
   const removeEntry = useDiaryStore((s) => s.removeEntry);
-
   const { primary } = useApplyTheme();
 
   const today = dayjs().format('YYYY-MM-DD');

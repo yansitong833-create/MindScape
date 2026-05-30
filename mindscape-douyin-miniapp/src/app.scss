@@ -9,4 +9,17 @@ page {
   line-height: $line-height-normal;
   color: $color-text-primary;
   background-color: $color-bg-page;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+// 页面根节点在设计稿宽度内居中
+page > view,
+page > scroll-view {
+  width: 100%;
+  max-width: $screen-width;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
 }

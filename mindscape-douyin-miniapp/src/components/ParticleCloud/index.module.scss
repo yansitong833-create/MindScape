@@ -1,0 +1,39 @@
+@use '@/styles/variables.scss' as *;
+
+.container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.waiting {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  pointer-events: none;
+}
+
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  background: transparent;
+  pointer-events: none;
+  padding: $spacing-lg;
+  text-align: center;
+  white-space: pre-wrap;
+}

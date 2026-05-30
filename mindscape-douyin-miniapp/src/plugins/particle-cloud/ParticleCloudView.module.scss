@@ -1,0 +1,124 @@
+@use '@/styles/variables.scss' as *;
+
+.box {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  background: #f9f6f0;
+  border-radius: $radius-lg;
+}
+
+/* 手账内嵌不用 WebView（原生组件会盖住整页），用 Canvas 预览 + 跳转全屏 WebView */
+.embedded {
+  height: 420rpx;
+  padding-top: 0;
+}
+
+.embeddedCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.embeddedExpand {
+  position: absolute;
+  right: $spacing-md;
+  bottom: $spacing-md;
+  z-index: 2;
+  padding: 10rpx 24rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
+}
+
+.embeddedExpandText {
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+}
+
+.fullscreen {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  border-radius: 0;
+}
+
+.webView {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.empty,
+.fallback {
+  padding-top: 0;
+  height: 320rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-left: $spacing-lg;
+  padding-right: $spacing-lg;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.emptyText {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.fallbackTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.fallbackDesc {
+  margin-top: $spacing-sm;
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  line-height: $line-height-loose;
+}
+
+.fallbackHint {
+  margin-top: $spacing-sm;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.loadingMask {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(249, 246, 240, 0.72);
+  pointer-events: none;
+}
+
+.loadingText {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.coverExit {
+  position: fixed;
+  top: 24rpx;
+  right: 24rpx;
+  z-index: 9999;
+}
+
+.coverExitInner,
+.coverExpandInner {
+  padding: 12rpx 28rpx;
+  font-size: 26rpx;
+  line-height: 1.4;
+  color: $color-text-primary;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 999rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.12);
+}
+

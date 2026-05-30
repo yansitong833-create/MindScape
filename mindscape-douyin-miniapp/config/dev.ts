@@ -1,5 +1,8 @@
 import type { UserConfigExport } from '@tarojs/cli';
 export default {
+  defineConstants: {
+    PARTICLE_CLOUD_DEV_MODE: 'true',
+  },
   logger: {
     quiet: false,
     stats: true,

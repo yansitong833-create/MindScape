@@ -1,16 +1,16 @@
 @use '@/styles/variables.scss' as *;
 
 .container {
-  min-height: 100vh;
-  padding: $spacing-xl $page-padding $spacing-xl;
-  box-sizing: border-box;
+  @include page-shell;
+  padding-top: $spacing-xl;
+  padding-bottom: $spacing-xl;
   background: $color-bg-card;
 }
 
 .content {
+  @include page-inner;
   display: flex;
   flex-direction: column;
-  align-items: center;
 }
 
 .content> :not(:first-child) {
@@ -27,8 +27,7 @@
 }
 
 .calendarSection {
-  width: 100%;
-  max-width: $max-content-width;
+  @include page-inner;
 }
 
 .calendarHeader {

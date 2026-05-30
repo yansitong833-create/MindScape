@@ -1,0 +1,12 @@
+# 子项目补充（根目录 .gitignore 已覆盖大部分规则）
+
+# 确保本目录构建与生成物不入库
+/dist/
+/node_modules/
+/.temp/
+/.swc/
+/.pai/
+
+/src/components/ParticleCloudWebView/devInlineTemplate.generated.ts
+/src/plugins/particle-cloud/staticParticleInline.generated.ts
+/h5/particle-cloud/libs/

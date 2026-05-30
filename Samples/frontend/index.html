@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindScape · 3D 情感日记</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- ═════════════ 左栏：时间轴 ═════════════ -->
+    <aside id="left-panel">
+      <div class="sidebar-nav">
+        <div class="year">2024</div>
+        <ul class="months" id="month-list">
+          <li class="active" data-month="02">02</li>
+          <li data-month="01">01</li>
+        </ul>
+      </div>
+      <div class="diary-list-container">
+        <button id="btn-add-diary" title="记录今天的心情">＋</button>
+        <main class="diary-list" id="diary-list"></main>
+      </div>
+    </aside>
+
+    <!-- ═════════════ 右栏：3D 粒子 ═════════════ -->
+    <main id="right-panel">
+      <div id="title">MindScape</div>
+      <canvas id="mindscape-canvas"></canvas>
+      <div id="input-container">
+        <input id="diaryInput" type="text" placeholder="这一刻，你在想什么？" autocomplete="off">
+      </div>
+    </main>
+  </div>
+
+  <script src="libs/three.min.js"></script>
+  <script src="libs/gsap.min.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

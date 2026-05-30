@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { DiaryEntry, Mood } from '@/types/diary';
+import type { DiaryEntry } from '@/types/diary';
+import { normalizeDiaryColor } from '@/constants/diaryColors';
 import { taroPersistStorage } from '@/utils/persistStorage';
 import { createId } from '@/utils/id';
 import dayjs from 'dayjs';
@@ -11,40 +12,42 @@ const STORAGE_KEY = 'mindscape:diary';
 export interface DiaryState {
   entries: DiaryEntry[];
   sampleMonth: string | null;
-  addEntry: (payload: { content: string; mood: Mood }) => DiaryEntry;
-  updateEntry: (payload: { id: string; content: string; mood: Mood }) => void;
+  addEntry: (payload: { content: string; color: string }) => DiaryEntry;
+  updateEntry: (payload: { id: string; content: string; color: string }) => void;
   removeEntry: (id: string) => void;
   clearAll: () => void;
   getEntryById: (id: string) => DiaryEntry | undefined;
   ensureMonthSampleVisible: (monthCursor?: string) => void;
 }
 
+const normalizeEntry = (raw: Partial<DiaryEntry> & { mood?: string }): DiaryEntry => ({
+  id: raw.id ?? createId(),
+  content: (raw.content ?? '').trim(),
+  color: normalizeDiaryColor(raw.color ?? raw.mood),
+  createdAt: raw.createdAt ?? Date.now(),
+});
+
 export const useDiaryStore = create<DiaryState>()(
   persist(
     (set, get) => ({
       entries: [],
       sampleMonth: null,
-      addEntry: ({ content, mood }) => {
-        const entry: DiaryEntry = {
-          id: createId(),
-          content: content.trim(),
-          mood,
-          createdAt: Date.now(),
-        };
+      addEntry: ({ content, color }) => {
+        const entry = normalizeEntry({ content, color, createdAt: Date.now() });
 
         set((state) => ({ entries: [entry, ...state.entries], sampleMonth: state.sampleMonth }));
         return entry;
       },
-      updateEntry: ({ id, content, mood }) =>
+      updateEntry: ({ id, content, color }) =>
         set((state) => ({
           entries: state.entries.map((e) =>
             e.id === id
               ? {
-                ...e,
-                content: content.trim(),
-                mood,
-              }
-              : e
+                  ...e,
+                  content: content.trim(),
+                  color: normalizeDiaryColor(color),
+                }
+              : e,
           ),
           sampleMonth: state.sampleMonth,
         })),
@@ -60,12 +63,12 @@ export const useDiaryStore = create<DiaryState>()(
         const endMs = monthEnd.endOf('day').valueOf();
 
         const hasSampleInMonth = state.entries.some(
-          (e) => e.createdAt >= startMs && e.createdAt <= endMs && e.id.startsWith('sample-')
+          (e) => e.createdAt >= startMs && e.createdAt <= endMs && e.id.startsWith('sample-'),
         );
         if (hasSampleInMonth) return;
 
         const filtered = state.entries.filter(
-          (e) => !(e.createdAt >= startMs && e.createdAt <= endMs && e.id.startsWith('sample-'))
+          (e) => !(e.createdAt >= startMs && e.createdAt <= endMs && e.id.startsWith('sample-')),
         );
         const sample = generateSampleDiaryEntriesForMonth(cursor);
         set({ entries: [...sample, ...filtered].sort((a, b) => b.createdAt - a.createdAt), sampleMonth: cursor });
@@ -78,14 +81,15 @@ export const useDiaryStore = create<DiaryState>()(
         setItem: (name, value) => taroPersistStorage.setItem(name, value),
         removeItem: (name) => taroPersistStorage.removeItem(name),
       },
-      version: 2,
-      migrate: (persistedState) => {
-        const state = persistedState as Partial<DiaryState> | undefined;
+      version: 3,
+      migrate: (persistedState, version) => {
+        const state = persistedState as { entries?: Array<Partial<DiaryEntry> & { mood?: string }> } | undefined;
+        const entries = (state?.entries ?? []).map((e) => normalizeEntry(e));
         return {
-          entries: state?.entries ?? [],
-          sampleMonth: (state as any)?.sampleMonth ?? null,
+          entries,
+          sampleMonth: (state as { sampleMonth?: string | null })?.sampleMonth ?? null,
         } as unknown as DiaryState;
       },
-    }
-  )
+    },
+  ),
 );
