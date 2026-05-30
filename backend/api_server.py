@@ -36,9 +36,11 @@ app.add_middleware(
 API_KEY = os.getenv("MINDSCAPE_API_KEY", "sk-9KefbdsjfSTLm0ijDbEd0622878b4f0a826bA3Db6a5bCa9d")
 API_BASE = os.getenv("MINDSCAPE_API_BASE", "https://api.openai-next.com/v1")
 LLM_MODEL = os.getenv("MINDSCAPE_LLM_MODEL", "deepseek-chat")
-IMAGE_MODEL = os.getenv("MINDSCAPE_IMAGE_MODEL", "gpt-image-2")
+IMAGE_MODEL = os.getenv("MINDSCAPE_IMAGE_MODEL", "qwen-image-plus")
+IMAGE_BASE = os.getenv("MINDSCAPE_IMAGE_BASE", "https://dashscope.aliyuncs.com/compatible-mode/v1")
 
 client = OpenAI(api_key=API_KEY, base_url=API_BASE, timeout=180.0)
+image_client = OpenAI(api_key=API_KEY, base_url=IMAGE_BASE, timeout=180.0)
 
 # ═══════════════════════════════════════════════════
 # System Prompt — 与 main.js 同步（prompts.ts 精华已融入）
@@ -126,17 +128,48 @@ async def analyze_diary(req: DiaryRequest):
         )
 
         raw = llm_resp.choices[0].message.content
-        if not raw:
-            raise RuntimeError("LLM 返回空内容")
+        if not raw or raw.strip() == "":
+            raise RuntimeError("LLM 返回空内容，请重试")
 
-        parsed = json.loads(raw)
-        image_prompt = parsed.get("imagePrompt", "")
-        theme_color = parsed.get("themeColor", "#803E4D")
+        # 防御性解析：尝试多轮修复
+        parsed = None
+        raw_cleaned = raw.strip()
+        # 去掉 markdown 代码块包裹
+        if raw_cleaned.startswith("```"):
+            raw_cleaned = raw_cleaned.split("\n", 1)[-1]
+            if raw_cleaned.endswith("```"):
+                raw_cleaned = raw_cleaned[:-3]
+            raw_cleaned = raw_cleaned.strip()
+            if raw_cleaned.lower().startswith("json"):
+                raw_cleaned = raw_cleaned[4:].strip()
+
+        try:
+            parsed = json.loads(raw_cleaned)
+        except json.JSONDecodeError:
+            # 再试：提取第一个完整 {} 块
+            lbrace = raw_cleaned.find("{")
+            rbrace = raw_cleaned.rfind("}")
+            if lbrace >= 0 and rbrace > lbrace:
+                parsed = json.loads(raw_cleaned[lbrace:rbrace + 1])
+            else:
+                raise RuntimeError(f"LLM 返回非 JSON: {raw_cleaned[:200]}")
+
+        image_prompt = parsed.get("imagePrompt", "") or parsed.get("生图提示词", "")
+        theme_color = parsed.get("themeColor", "") or parsed.get("颜色", {})
+
+        # 如果 themeColor 是对象，取第一个值
+        if isinstance(theme_color, dict):
+            theme_color = list(theme_color.keys())[0] if theme_color else "#803E4D"
 
         if not image_prompt:
-            raise RuntimeError("LLM 未返回 imagePrompt")
+            # 最终退路：用用户原话做提示词
+            logger.warning("[LLM] 未返回 imagePrompt，使用退路")
+            image_prompt = f"solid black fill style, pure white background, minimalist, flat design, {text}"
 
-        logger.info(f"[分析] 意象提示词: {image_prompt[:60]}...")
+        if not theme_color or not isinstance(theme_color, str) or not theme_color.startswith("#"):
+            theme_color = "#803E4D"
+
+        logger.info(f"[分析] 意象提示词: {image_prompt[:80]}...")
         logger.info(f"[分析] 主题色: {theme_color}")
 
     except Exception as e:
@@ -145,9 +178,9 @@ async def analyze_diary(req: DiaryRequest):
             content={"success": False, "error": f"LLM 分析失败: {str(e)}"}
         )
 
-    # ── 2. 生图 ────────────────────────────────────
+    # ── 2. 生图 (千问 qwen-image-plus via DashScope) ──
     try:
-        img_resp = client.images.generate(
+        img_resp = image_client.images.generate(
             model=IMAGE_MODEL,
             prompt=image_prompt,
             n=1,
