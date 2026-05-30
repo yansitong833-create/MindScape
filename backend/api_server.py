@@ -35,12 +35,67 @@ app.add_middleware(
 # ── 配置 ─────────────────────────────────────────
 API_KEY = os.getenv("MINDSCAPE_API_KEY", "sk-9KefbdsjfSTLm0ijDbEd0622878b4f0a826bA3Db6a5bCa9d")
 API_BASE = os.getenv("MINDSCAPE_API_BASE", "https://api.openai-next.com/v1")
-LLM_MODEL = os.getenv("MINDSCAPE_LLM_MODEL", "deepseek-chat")
-IMAGE_MODEL = os.getenv("MINDSCAPE_IMAGE_MODEL", "qwen-image-plus")
-IMAGE_BASE = os.getenv("MINDSCAPE_IMAGE_BASE", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+LLM_MODEL = os.getenv("MINDSCAPE_LLM_MODEL", "gpt-4o-mini")
+IMAGE_MODEL = os.getenv("MINDSCAPE_IMAGE_MODEL", "gpt-image-2")
 
-client = OpenAI(api_key=API_KEY, base_url=API_BASE, timeout=180.0)
-image_client = OpenAI(api_key=API_KEY, base_url=IMAGE_BASE, timeout=180.0)
+from openai import OpenAI, APIError, APITimeoutError, APIConnectionError
+import time
+
+client = OpenAI(api_key=API_KEY, base_url=API_BASE, timeout=180.0, max_retries=0)
+
+
+def call_llm_with_retry(messages, max_retries=3):
+    """调用 LLM，自动重试处理 524 超时"""
+    for attempt in range(max_retries):
+        try:
+            return client.chat.completions.create(
+                model=LLM_MODEL,
+                messages=messages,
+                response_format={"type": "json_object"},
+                temperature=0.7,
+            )
+        except (APITimeoutError, APIConnectionError) as e:
+            logger.warning(f"[LLM] 超时/连接失败 (尝试 {attempt+1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep((attempt + 1) * 3)
+            else:
+                raise
+        except APIError as e:
+            if e.status_code >= 500 or e.status_code == 524:
+                logger.warning(f"[LLM] 服务端错误 {e.status_code} (尝试 {attempt+1}/{max_retries})")
+                if attempt < max_retries - 1:
+                    time.sleep((attempt + 1) * 5)
+                else:
+                    raise
+            else:
+                raise
+
+
+def call_image_with_retry(prompt, max_retries=3):
+    """调用生图 API，长超时 + 重试"""
+    for attempt in range(max_retries):
+        try:
+            return client.images.generate(
+                model=IMAGE_MODEL,
+                prompt=prompt,
+                n=1,
+                size="1024x1024",
+            )
+        except (APITimeoutError, APIConnectionError) as e:
+            logger.warning(f"[生图] 超时 (尝试 {attempt+1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep(5)
+            else:
+                raise
+        except APIError as e:
+            if e.status_code in (524, 502, 503, 504) or e.status_code >= 500:
+                logger.warning(f"[生图] 服务端错误 {e.status_code} (尝试 {attempt+1}/{max_retries})")
+                if attempt < max_retries - 1:
+                    time.sleep((attempt + 1) * 8)
+                else:
+                    raise
+            else:
+                raise
 
 # ═══════════════════════════════════════════════════
 # System Prompt — 与 main.js 同步（prompts.ts 精华已融入）
@@ -115,17 +170,12 @@ async def analyze_diary(req: DiaryRequest):
 
     logger.info(f"[分析] 收到文本: {text[:80]}...")
 
-    # ── 1. LLM 分析 ────────────────────────────────
+    # ── 1. LLM 分析 (带重试) ──────────────────
     try:
-        llm_resp = client.chat.completions.create(
-            model=LLM_MODEL,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": text},
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.7,
-        )
+        llm_resp = call_llm_with_retry(messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": text},
+        ])
 
         raw = llm_resp.choices[0].message.content
         if not raw or raw.strip() == "":
@@ -146,12 +196,15 @@ async def analyze_diary(req: DiaryRequest):
         try:
             parsed = json.loads(raw_cleaned)
         except json.JSONDecodeError:
-            # 再试：提取第一个完整 {} 块
+            # 再试：用 raw_decode 提取第一个完整 JSON 对象
             lbrace = raw_cleaned.find("{")
-            rbrace = raw_cleaned.rfind("}")
-            if lbrace >= 0 and rbrace > lbrace:
-                parsed = json.loads(raw_cleaned[lbrace:rbrace + 1])
-            else:
+            if lbrace >= 0:
+                decoder = json.JSONDecoder()
+                try:
+                    parsed, _ = decoder.raw_decode(raw_cleaned[lbrace:])
+                except json.JSONDecodeError:
+                    parsed = None
+            if not parsed:
                 raise RuntimeError(f"LLM 返回非 JSON: {raw_cleaned[:200]}")
 
         image_prompt = parsed.get("imagePrompt", "") or parsed.get("生图提示词", "")
@@ -178,14 +231,9 @@ async def analyze_diary(req: DiaryRequest):
             content={"success": False, "error": f"LLM 分析失败: {str(e)}"}
         )
 
-    # ── 2. 生图 (千问 qwen-image-plus via DashScope) ──
+    # ── 2. 生图 (重试机制) ──
     try:
-        img_resp = image_client.images.generate(
-            model=IMAGE_MODEL,
-            prompt=image_prompt,
-            n=1,
-            size="1024x1024",
-        )
+        img_resp = call_image_with_retry(image_prompt)
 
         img_data = img_resp.data[0]
         image_url = getattr(img_data, "url", None)
