@@ -7,14 +7,152 @@ const MINDSCAPE_API_URL = typeof MINDSCAPE_API_OVERRIDE !== "undefined"
   ? MINDSCAPE_API_OVERRIDE
   : "/api";
 
-// ── Three.js 场景初始化 ──
+// ═══════════════════════════════════════════════
+// 左栏 时间轴 — 10+ 条诗意日记 + 状态记忆
+// ═══════════════════════════════════════════════
+const mockDiaries = [
+  { date: "02.14", text: "雨后的街道有泥土的芬芳，慢慢走回家的路上心情特别好。", color: "#8C9E82", generatedImageUrl: null, themeColor: null },
+  { date: "02.11", text: "喝到了一杯完美的焦糖玛奇朵，甜得像恋爱。", color: "#C49B7A", generatedImageUrl: null, themeColor: null },
+  { date: "02.07", text: "今天看到了很美的晚霞，买了一束郁金香。", color: "#E08F81", generatedImageUrl: null, themeColor: null },
+  { date: "02.04", text: "工作有些疲惫，但朋友突然发来一张好笑的表情包。", color: "#A8B4A5", generatedImageUrl: null, themeColor: null },
+  { date: "02.01", text: "看着窗外的落叶发呆，什么也不想做，就这样刚刚好。", color: "#B8A890", generatedImageUrl: null, themeColor: null },
+  { date: "01.28", text: "安静地看了一下午的书，时间好像变慢了。", color: "#6C7A89", generatedImageUrl: null, themeColor: null },
+  { date: "01.24", text: "和朋友一起去了新开的画廊，灵感像泉水一样涌出来。", color: "#C4A882", generatedImageUrl: null, themeColor: null },
+  { date: "01.22", text: "下雪了，整个世界都安静下来，泡了一杯热可可。", color: "#8FA9BF", generatedImageUrl: null, themeColor: null },
+  { date: "01.18", text: "早上被阳光叫醒，第一次没有按掉闹钟。", color: "#DFC98A", generatedImageUrl: null, themeColor: null },
+  { date: "01.15", text: "新的一年开始了，在日记本上写下了今年的三个心愿。", color: "#D4C5C7", generatedImageUrl: null, themeColor: null },
+  { date: "01.10", text: "今天什么也没发生，但就是觉得莫名开心。", color: "#C0B9D4", generatedImageUrl: null, themeColor: null },
+  { date: "01.06", text: "在二手书店淘到了一本泛黄的诗集，扉页上有人写过字。", color: "#A8978C", generatedImageUrl: null, themeColor: null },
+];
+
+let currentActiveDiaryIndex = 2;
+let currentMonth = "02";
+
+function renderTimeline() {
+  const listContainer = document.getElementById("diary-list");
+  if (!listContainer) return;
+  listContainer.innerHTML = "";
+
+  mockDiaries.forEach((diary, idx) => {
+    if (!diary.date.startsWith(currentMonth)) return;
+
+    const item = document.createElement("div");
+    item.className = "diary-item";
+    if (idx === currentActiveDiaryIndex) item.classList.add("active");
+    item.innerHTML = `
+      <div class="diary-date">${diary.date}</div>
+      <div class="diary-content">
+        <div class="diary-preview-circle" style="background: ${diary.color}"></div>
+        <div class="diary-text">${diary.text}</div>
+      </div>
+      <button class="btn-delete" title="删除">🗑</button>`;
+    item.querySelector(".diary-item, .diary-item *"); // no-op to find
+
+    item.addEventListener("click", (ev) => {
+      if (ev.target.closest(".btn-delete")) return;
+      selectDiary(idx);
+    });
+    item.querySelector(".btn-delete").addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      deleteDiary(idx);
+    });
+    listContainer.appendChild(item);
+  });
+}
+
+function deleteDiary(idx) {
+  mockDiaries.splice(idx, 1);
+  if (idx <= currentActiveDiaryIndex && currentActiveDiaryIndex >= mockDiaries.length) {
+    currentActiveDiaryIndex = Math.max(0, mockDiaries.length - 1);
+  }
+  renderTimeline();
+  if (mockDiaries.length === 0) {
+    disperseAndClear();
+    document.getElementById("diaryInput").value = "";
+  } else {
+    selectDiary(Math.min(currentActiveDiaryIndex, mockDiaries.length - 1));
+  }
+}
+
+function selectDiary(idx) {
+  if (idx < 0 || idx >= mockDiaries.length) return;
+  currentActiveDiaryIndex = idx;
+  const diary = mockDiaries[idx];
+  document.querySelectorAll(".diary-item").forEach(el => el.classList.remove("active"));
+  const items = document.querySelectorAll(".diary-item");
+  let visibleIdx = 0;
+  for (let i = 0; i <= idx; i++) {
+    if (mockDiaries[i].date.startsWith(currentMonth)) visibleIdx++;
+  }
+  if (items.length > visibleIdx - 1 && items[visibleIdx - 1]) {
+    items[visibleIdx - 1].classList.add("active");
+  }
+
+  if (diary.generatedImageUrl) {
+    loadSavedParticle(diary.generatedImageUrl, diary.themeColor);
+    document.getElementById("diaryInput").value = diary.text;
+  } else {
+    disperseAndClear();
+    document.getElementById("diaryInput").value = diary.text || "";
+    document.getElementById("diaryInput").focus();
+  }
+}
+
+// 月份切换
+document.addEventListener("DOMContentLoaded", () => {
+  renderTimeline();
+
+  document.querySelectorAll("#month-list li").forEach(li => {
+    li.addEventListener("click", () => {
+      document.querySelectorAll("#month-list li").forEach(l => l.classList.remove("active"));
+      li.classList.add("active");
+      currentMonth = li.dataset.month;
+      renderTimeline();
+      // 选当前月第一条
+      const firstIdx = mockDiaries.findIndex(d => d.date.startsWith(currentMonth));
+      if (firstIdx >= 0) selectDiary(firstIdx);
+    });
+  });
+
+  document.getElementById("btn-add-diary").addEventListener("click", () => {
+    const today = new Date();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    mockDiaries.unshift({
+      date: mm + "." + dd, text: "", color: "#D4C5C7",
+      generatedImageUrl: null, themeColor: null,
+    });
+    currentActiveDiaryIndex = 0;
+    if (mm !== currentMonth) {
+      currentMonth = mm;
+      document.querySelectorAll("#month-list li").forEach(l => {
+        l.classList.toggle("active", l.dataset.month === mm);
+      });
+    }
+    renderTimeline();
+    disperseAndClear();
+    document.getElementById("diaryInput").value = "";
+    document.getElementById("diaryInput").focus();
+  });
+});
+
+
+// ── Three.js 场景初始化 (约束在 right-panel 内) ──
 const canvas = document.getElementById("mindscape-canvas");
+const rightPanel = document.getElementById("right-panel");
 
 const scene = new THREE.Scene();
 
+function getRightPanelSize() {
+  const w = rightPanel ? rightPanel.clientWidth : window.innerWidth;
+  const h = rightPanel ? rightPanel.clientHeight : window.innerHeight;
+  return { w, h };
+}
+
+const rpSize = getRightPanelSize();
 const camera = new THREE.PerspectiveCamera(
   60,
-  window.innerWidth / window.innerHeight,
+  rpSize.w / rpSize.h,
   0.1,
   1000
 );
@@ -22,7 +160,7 @@ camera.position.set(0, 0, 40);
 camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(rpSize.w, rpSize.h);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setClearColor(0xF9F6F0);
 
@@ -408,6 +546,62 @@ class ImageToParticles {
     });
   }
 
+  // ── 打散回混沌球体（不飞远，仅回到星云态）──
+  disperseToSphere(duration = 1.5) {
+    return new Promise((resolve) => {
+      if (!this.points) return resolve();
+      this.physicsActive = false;
+      if (this._tween) { this._tween.kill(); this._tween = null; }
+
+      const count = this.pointCount;
+      const current = this.currentPositions;
+      // 生成和 initNebulaOnly 一样的随机球体目标
+      const sphereTargets = new Float32Array(count * 3);
+      const R = this.nebulaRadius;
+      for (let i = 0; i < count; i++) {
+        const roll = Math.random();
+        let r, theta, phi;
+        if (roll < 0.55) {
+          theta = Math.random() * Math.PI * 2;
+          phi = Math.acos(2 * Math.random() - 1);
+          r = R * (0.55 + Math.random() * 0.45);
+        } else if (roll < 0.85) {
+          theta = Math.random() * Math.PI * 2;
+          phi = Math.acos(2 * Math.random() - 1);
+          r = R * (0.1 + Math.random() * 0.4);
+        } else {
+          theta = Math.random() * Math.PI * 2;
+          phi = Math.PI / 2 + (Math.random() - 0.5) * 0.6;
+          r = R * (0.35 + Math.random() * 0.65);
+        }
+        sphereTargets[i * 3]     = Math.sin(phi) * Math.cos(theta) * r;
+        sphereTargets[i * 3 + 1] = Math.sin(phi) * Math.sin(theta) * r;
+        sphereTargets[i * 3 + 2] = Math.cos(phi) * r;
+      }
+
+      const startPositions = new Float32Array(current);
+      const positionAttr = this._corePoints.geometry.attributes.position;
+      const proxy = { progress: 0 };
+      const self = this;
+
+      gsap.to(proxy, {
+        progress: 1, duration, ease: "power2.inOut",
+        onUpdate: () => {
+          const p = proxy.progress;
+          for (let i = 0; i < count * 3; i++) {
+            current[i] = startPositions[i] + (sphereTargets[i] - startPositions[i]) * p;
+          }
+          positionAttr.needsUpdate = true;
+        },
+        onComplete: () => {
+          positionAttr.needsUpdate = true;
+          self._tween = null;
+          resolve();
+        },
+      });
+    });
+  }
+
   enablePhysics() {
     if (!this.points) return;
     this.physicsActive = true;
@@ -588,6 +782,59 @@ async function analyzeAndGenerate(text) {
 }
 
 // ═══════════════════════════════════════════
+// 粒子状态辅助函数
+// ═══════════════════════════════════════════
+function disposeCurrentParticleSystem() {
+  if (!particleSystem) return;
+  particleSystem.physicsActive = false;
+  if (particleSystem._tween) particleSystem._tween.kill();
+  if (particleSystem._loadingTween) particleSystem._loadingTween.kill();
+  if (particleSystem.points) {
+    scene.remove(particleSystem.points);
+    // dispose each child in Group
+    particleSystem.points.traverse(child => {
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) {
+        if (child.material.map) child.material.map.dispose();
+        child.material.dispose();
+      }
+    });
+  }
+  particleSystem = null;
+}
+
+async function loadSavedParticle(imageUrl, themeColor) {
+  disposeCurrentParticleSystem();
+  const color = themeColor || "#803E4D";
+  particleSystem = new ImageToParticles(imageUrl, { step: 8, nebulaRadius: 14 });
+  try {
+    const pts = await particleSystem.init();
+    scene.add(pts);
+    particleSystem.assembleParticles(color, 2.5);
+  } catch (err) {
+    console.error("[MindScape] 恢复粒子失败:", err.message);
+  }
+}
+
+async function disperseAndClear() {
+  if (!particleSystem) { initNebula(); return; }
+  if (particleSystem.points && particleSystem._corePoints) {
+    await particleSystem.disperseToSphere(1.2);
+  }
+  // 分散后再重建干净的星云
+  disposeCurrentParticleSystem();
+  initNebula();
+}
+
+function initNebula() {
+  particleSystem = new ImageToParticles(null, { nebulaRadius: 13 });
+  particleSystem.initNebulaOnly(3000).then(pts => {
+    scene.add(pts);
+    particleSystem.enablePhysics();
+  }).catch(err => console.error("[MindScape] 初始化星云失败:", err));
+}
+
+// ═══════════════════════════════════════════
 // 暖色库
 // ═══════════════════════════════════════════
 const WARM_COLORS = [
@@ -599,20 +846,15 @@ function randomWarmColor() {
 }
 
 // ═══════════════════════════════════════════
-// 启动 — 星云球体 + 涟漪物理
-// ═══════════════════════════════════════════
-let particleSystem = new ImageToParticles(null, { nebulaRadius: 13 });
-
-particleSystem.initNebulaOnly(3000).then((points) => {
-  scene.add(points);
-  particleSystem.enablePhysics();
-  console.log("[MindScape] 星云就绪 — 3000粒子，涟漪波动已激活");
-}).catch((err) => {
-  console.error("[MindScape] 初始化失败:", err);
-});
 
 // ═══════════════════════════════════════════
-// 输入框逻辑
+// 启动 — 星云球体
+// ═══════════════════════════════════════════
+let particleSystem = null;
+initNebula();
+
+// ═══════════════════════════════════════════
+// 输入框逻辑（新版：打散→球体旋转→生成→销毁→重建）
 // ═══════════════════════════════════════════
 const diaryInput = document.getElementById("diaryInput");
 
@@ -623,45 +865,59 @@ diaryInput.addEventListener("keydown", async (e) => {
 
   console.log("[MindScape] 输入:", text);
   e.target.value = "";
-  e.target.placeholder = "粒子正在思考...";
+  e.target.placeholder = "正在重构思绪...";
   diaryInput.disabled = true;
 
-  const oldSystem = particleSystem;
-  if (oldSystem && oldSystem.points) oldSystem.startLoadingAnimation();
+  const ps = particleSystem;
 
-  // ① 调用后端 API：分析日记 + 生图（一次调用完成）
+  // ① 如果有粒子形状 → 打散回球体，然后旋转
+  if (ps && ps._corePoints) {
+    const isNebula = !ps.imagePath; // imagePath=null 说明是纯星云
+    if (!isNebula) {
+      await ps.disperseToSphere(1.5);
+    }
+    ps.startLoadingAnimation();
+  }
+
+  // ② 调用后端 API
   const result = await analyzeAndGenerate(text);
+  if (ps) ps.stopLoadingAnimation();
+
   if (!result || !result.imageUrl) {
     console.error("[MindScape] 后端 API 返回失败");
-    if (oldSystem && oldSystem.points) oldSystem.stopLoadingAnimation();
-    e.target.placeholder = "今天感觉如何？";
+    e.target.placeholder = "这一刻，你在想什么？";
     diaryInput.disabled = false;
     return;
   }
 
-  if (oldSystem && oldSystem.points) {
-    oldSystem.stopLoadingAnimation();
-    await oldSystem.disperseParticles(0.75);
-  }
+  // ③ 彻底销毁旧粒子球（不留幽灵）
+  disposeCurrentParticleSystem();
 
-  // ② 后端返回的颜色和图片
-  const imageUrl = result.imageUrl;
+  // ④ 用新图创建新粒子系统
   const color = result.themeColor || "#803E4D";
-  particleSystem = new ImageToParticles(imageUrl, { step: 8, nebulaRadius: 14 });
-
+  particleSystem = new ImageToParticles(result.imageUrl, { step: 8, nebulaRadius: 14 });
   try {
-    const points = await particleSystem.init();
-    scene.add(points);
+    const pts = await particleSystem.init();
+    scene.add(pts);
   } catch (err) {
     console.error("[MindScape] 图片加载失败:", err.message);
-    e.target.placeholder = "今天感觉如何？";
+    e.target.placeholder = "这一刻，你在想什么？";
     diaryInput.disabled = false;
+    initNebula();
     return;
   }
 
   particleSystem.assembleParticles(color, 2.5);
-  e.target.placeholder = "今天感觉如何？";
+  e.target.placeholder = "这一刻，你在想什么？";
   diaryInput.disabled = false;
+
+  // ⑤ 状态记忆
+  const currentDiary = mockDiaries[currentActiveDiaryIndex];
+  if (currentDiary) {
+    currentDiary.generatedImageUrl = result.imageUrl;
+    currentDiary.themeColor = color;
+    console.log("[MindScape] 粒子图已保存:", currentDiary.date);
+  }
 });
 
 // ═══════════════════════════════════════════
@@ -720,8 +976,18 @@ function animate() {
 }
 animate();
 
+
+// ── 渲染循环 ──
+function animate() {
+  requestAnimationFrame(animate);
+  if (particleSystem) particleSystem.updatePhysics();
+  renderer.render(scene, camera);
+}
+animate();
+
 window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  const s = getRightPanelSize();
+  camera.aspect = s.w / s.h;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(s.w, s.h);
 });

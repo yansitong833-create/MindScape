@@ -7,13 +7,31 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="title">MindScape</div>
-  <div id="subtitle">写下心情，粒子成诗</div>
-  <canvas id="mindscape-canvas"></canvas>
-  <div id="input-container">
-    <input id="diaryInput" type="text" placeholder="今天感觉如何？" autocomplete="off">
+  <div id="app">
+    <!-- ═════════════ 左栏：时间轴 ═════════════ -->
+    <aside id="left-panel">
+      <div class="sidebar-nav">
+        <div class="year">2024</div>
+        <ul class="months" id="month-list">
+          <li class="active" data-month="02">02</li>
+          <li data-month="01">01</li>
+        </ul>
+      </div>
+      <div class="diary-list-container">
+        <button id="btn-add-diary" title="记录今天的心情">＋</button>
+        <main class="diary-list" id="diary-list"></main>
+      </div>
+    </aside>
+
+    <!-- ═════════════ 右栏：3D 粒子 ═════════════ -->
+    <main id="right-panel">
+      <div id="title">MindScape</div>
+      <canvas id="mindscape-canvas"></canvas>
+      <div id="input-container">
+        <input id="diaryInput" type="text" placeholder="这一刻，你在想什么？" autocomplete="off">
+      </div>
+    </main>
   </div>
-  <div id="hint">按 Enter 发送</div>
 
   <script src="libs/three.min.js"></script>
   <script src="libs/gsap.min.js"></script>
