@@ -232,17 +232,21 @@ class ImageToParticles {
     geometry.setAttribute("position", new THREE.BufferAttribute(this.currentPositions, 3));
     geometry.setAttribute("aTarget", new THREE.BufferAttribute(this.targetPositions, 3));
 
-    // 浅色底优雅深色调：复古玫瑰/莫兰迪/松石/雾蓝
+    // 深色基底 + 高饱和荧光点缀
     const PALETTE = [
-      { rgb: [0.50, 0.24, 0.30], weight: 18 }, // 复古玫瑰红 #803E4D
-      { rgb: [0.17, 0.24, 0.31], weight: 16 }, // 深海蓝 #2C3E50
-      { rgb: [0.20, 0.34, 0.26], weight: 14 }, // 松石绿 #345642
-      { rgb: [0.35, 0.30, 0.39], weight: 14 }, // 莫兰迪紫 #5A4C64
-      { rgb: [0.31, 0.22, 0.27], weight: 12 }, // 深灰紫 #4F383F
-      { rgb: [0.55, 0.36, 0.36], weight: 10 }, // 干枯玫瑰 #8C5B5B
-      { rgb: [0.38, 0.26, 0.18], weight: 8  }, // 深可可 #61422E
-      { rgb: [0.22, 0.30, 0.35], weight: 5  }, // 雾蓝 #384D59
-      { rgb: [0.45, 0.35, 0.28], weight: 3  }, // 暖灰褐 #735947
+      // — 基底优雅深色 (90%) —
+      { rgb: [0.50, 0.24, 0.30], weight: 16 }, // 复古玫瑰红
+      { rgb: [0.17, 0.24, 0.31], weight: 14 }, // 深海蓝
+      { rgb: [0.20, 0.34, 0.26], weight: 12 }, // 松石绿
+      { rgb: [0.35, 0.30, 0.39], weight: 12 }, // 莫兰迪紫
+      { rgb: [0.55, 0.36, 0.36], weight: 10 }, // 干枯玫瑰
+      { rgb: [0.38, 0.26, 0.18], weight: 8  }, // 深可可
+      // — 高饱和荧光呼吸灯 (10%) —
+      { rgb: [0.95, 0.35, 0.40], weight: 4  }, // 电光玫红
+      { rgb: [0.20, 0.60, 0.55], weight: 3  }, // 翡翠青
+      { rgb: [0.80, 0.45, 0.15], weight: 2  }, // 琥珀橙
+      { rgb: [0.30, 0.45, 0.75], weight: 2  }, // 钴蓝
+      { rgb: [0.85, 0.30, 0.55], weight: 1  }, // 荧光粉
     ];
 
     const totalWeight = PALETTE.reduce((s, c) => s + c.weight, 0);
@@ -257,30 +261,59 @@ class ImageToParticles {
       for (let j = 0; j < thresholds.length; j++) {
         if (roll < thresholds[j]) { picked = PALETTE[j].rgb; break; }
       }
-      // NormalBlending 下加深层次：深→显色 中→柔和 浅→朦胧
-      const v = Math.random() < 0.15 ? 0.95 + Math.random() * 0.20  // 15% 浓郁
-              : Math.random() < 0.40 ? 0.65 + Math.random() * 0.25  // 40% 标准
-              : 0.35 + Math.random() * 0.25;                         // 45% 浅淡
-      colors[i * 3]     = Math.min(picked[0] * v, 1.0);
-      colors[i * 3 + 1] = Math.min(picked[1] * v, 1.0);
-      colors[i * 3 + 2] = Math.min(picked[2] * v, 1.0);
+      // 多层次亮度：深→柔和 中→鲜明 亮→荧光呼吸灯
+      const isAccent = picked[0] > 0.6 || picked[1] > 0.4;  // 荧光色
+      let v;
+      if (isAccent) {
+        v = Math.random() < 0.3 ? 1.1 + Math.random() * 0.3  // 30% 超亮荧光
+          : 0.7 + Math.random() * 0.35;                       // 70% 鲜明
+      } else {
+        v = Math.random() < 0.12 ? 1.0 + Math.random() * 0.15 // 12% 高亮
+          : Math.random() < 0.45 ? 0.55 + Math.random() * 0.35 // 45% 标准
+          : 0.25 + Math.random() * 0.25;                        // 43% 朦胧基底
+      }
+      colors[i * 3]     = Math.min(picked[0] * v, 1.3);
+      colors[i * 3 + 1] = Math.min(picked[1] * v, 1.3);
+      colors[i * 3 + 2] = Math.min(picked[2] * v, 1.3);
     }
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
-    const material = new THREE.PointsMaterial({
-      size: 0.40,
-      map: createParticleTexture(),
+    const tex = createParticleTexture();
+
+    // 光晕层：大粒子低透明度
+    const matGlow = new THREE.PointsMaterial({
+      size: 0.70,
+      map: tex,
       color: 0xffffff,
       vertexColors: true,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.22,
       depthWrite: false,
       blending: THREE.NormalBlending,
       sizeAttenuation: true,
     });
 
-    this.points = new THREE.Points(geometry, material);
-    return this.points;
+    // 锐利核心层：小粒子高透明度
+    const matCore = new THREE.PointsMaterial({
+      size: 0.28,
+      map: tex,
+      color: 0xffffff,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.82,
+      depthWrite: false,
+      blending: THREE.NormalBlending,
+      sizeAttenuation: true,
+    });
+
+    const group = new THREE.Group();
+    this._glowPoints = new THREE.Points(geometry, matGlow);
+    this._corePoints = new THREE.Points(geometry, matCore);
+    group.add(this._glowPoints);
+    group.add(this._corePoints);
+
+    this.points = group;
+    return group;
   }
 
   assembleParticles(colorHex, duration = 2.5) {
@@ -291,13 +324,17 @@ class ImageToParticles {
     const target = this.targetPositions;
     const current = this.currentPositions;
     const count = this.pointCount;
-    const positionAttr = this.points.geometry.attributes.position;
+    const geo = this._corePoints.geometry;
+    const positionAttr = geo.attributes.position;
 
-    // 应用 LLM 生成的优雅深色调到材质
+    // 应用 LLM 生成的优雅深色调到双层材质
     if (colorHex) {
       const tint = new THREE.Color(colorHex);
       tint.lerp(new THREE.Color(0x5C4B51), 0.3);
-      this.points.material.color.copy(tint);
+      this._corePoints.material.color.copy(tint);
+      const tintGlow = new THREE.Color(colorHex);
+      tintGlow.lerp(new THREE.Color(0xffffff), 0.5);
+      this._glowPoints.material.color.copy(tintGlow);
     }
 
     const proxy = { progress: 0 };
@@ -330,7 +367,7 @@ class ImageToParticles {
 
       const count = this.pointCount;
       const current = this.currentPositions;
-      const positionAttr = this.points.geometry.attributes.position;
+      const positionAttr = this._corePoints.geometry.attributes.position;
 
       const scatterTargets = new Float32Array(count * 3);
       for (let i = 0; i < count; i++) {
@@ -358,8 +395,11 @@ class ImageToParticles {
         onComplete: () => {
           if (self.points) {
             self.points.removeFromParent();
-            self.points.geometry.dispose();
-            self.points.material.dispose();
+            self._corePoints.geometry.dispose();
+            self._corePoints.material.dispose();
+            self._glowPoints.material.dispose();
+            self._corePoints = null;
+            self._glowPoints = null;
             self.points = null;
           }
           resolve();
@@ -397,7 +437,7 @@ class ImageToParticles {
     raycaster.setFromCamera(mouseNDC, camera);
     raycaster.ray.intersectPlane(mousePlane, mouseWorld);
 
-    const positions = this.points.geometry.attributes.position.array;
+    const positions = this._corePoints.geometry.attributes.position.array;
     const targets = this.targetPositions;
     const n = this.pointCount;
     const time = performance.now() * 0.001;
@@ -491,7 +531,7 @@ class ImageToParticles {
       positions[i3 + 2] += (tz - pz) * lerpSpeed * 0.6;
     }
 
-    this.points.geometry.attributes.position.needsUpdate = true;
+    this._corePoints.geometry.attributes.position.needsUpdate = true;
   }
 }
 
