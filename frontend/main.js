@@ -1,19 +1,11 @@
 // ═══════════════════════════════════════════
-// OpenAI 配置 (DALL·E 生图)
-// API Key 和 Base URL 从 config.js 读取
-// 本地用户: 复制 config.example.js → config.js，填入你的 Key
+// MindScape 后端 API 地址
+// 本地开发: http://localhost:8000
+// 生产环境: 同域 /api （Nginx 反向代理）
 // ═══════════════════════════════════════════
-if (typeof OPENAI_API_KEY === 'undefined' || !OPENAI_API_KEY || OPENAI_API_KEY === 'sk-your-api-key-here') {
-  console.warn('[MindScape] config.js 未配置或为占位符，请复制 config.example.js → config.js 并填入真实 API Key');
-}
-
-// ═══════════════════════════════════════════
-// LLM 配置 (DeepSeek — 情感分析中枢)
-// ═══════════════════════════════════════════
-const LLM_API_KEY = typeof DEEPSEEK_API_KEY !== "undefined" ? DEEPSEEK_API_KEY : OPENAI_API_KEY;
-const LLM_BASE_URL = typeof LLM_BASE_URL_OVERRIDE !== "undefined" ? LLM_BASE_URL_OVERRIDE : "https://api.openai-next.com/v1";
-
-
+const MINDSCAPE_API_URL = typeof MINDSCAPE_API_OVERRIDE !== "undefined"
+  ? MINDSCAPE_API_OVERRIDE
+  : "/api";
 
 // ── Three.js 场景初始化 ──
 const canvas = document.getElementById("mindscape-canvas");
@@ -525,120 +517,32 @@ function analyzeText(text) {
 }
 
 // ═══════════════════════════════════════════
-// LLM 情感分析中枢 (DeepSeek)
+// 后端 API 调用 — 分析日记 + 生图（无前端 API Key）
 // ═══════════════════════════════════════════
-async function analyzeDiaryWithLLM(text) {
-  console.log("[MindScape] 正在呼叫大语言模型分析日记...");
-
-  const systemPrompt = `你是一个拥有极高艺术审美的心理分析师，目标受众是年轻女性。
-
-用户会输入一段日记文本。请执行以下推理链：
-
-【Step 1 — 情感分析】
-提取主导情绪与次要情绪，并推导对应的心理颜色（不含黑色和白色，基于色彩心理学）。
-
-【Step 2 — 意象创作】
-提取或创作一个最具画面感的核心意象。如果用户只表达了抽象感受（如"被掏空""像漂浮的云"），你必须发挥艺术家洞察力，为这种感受赋予一个具体的视觉隐喻物体。特别彩蛋：如果用户参加了比赛/竞技，可以输出金色奖杯意象。
-
-【Step 3 — 生图提示词 (imagePrompt)】
-必须生成一段英文
-，严格遵循：
-- "A highly detailed, pure black silhouette of [意象], intricate details, fairy-tale style, elegant, on a pure white background, extremely high contrast, black and white only, no other colors, solid fill or clean outline."
-- 禁止出现除 black/white 以外的任何颜色词。
-
-【Step 4 — 主题颜色 (themeColor)】
-因为最终渲染背景是浅米色(#F9F6F0)，你必须输出深色调、低饱和度的优雅十六进制颜色：
-- 复古玫瑰红 #803E4D / 深海蓝 #2C3E50 / 松石绿 #345642 / 莫兰迪紫 #5A4C64 / 干枯玫瑰 #8C5B5B / 雾蓝 #384D59 / 暖灰褐 #735947
-- 绝对不要输出刺眼的亮色或荧光色。
-
-必须严格返回合法JSON格式：{"imagePrompt": "...", "themeColor": "..."}`;
+async function analyzeAndGenerate(text) {
+  console.log("[MindScape] 正在呼叫后端 API 分析日记...");
 
   try {
-        const response = await fetch(LLM_BASE_URL + "/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${LLM_API_KEY}`
-            },
-            body: JSON.stringify({
-                model: "deepseek-chat",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: text }
-                ],
-                response_format: { type: "json_object" }
-            })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok || data.error) {
-            console.error("【致命拦截】LLM API 返回错误:", data.error || response.statusText);
-            alert("大模型 (DeepSeek) 接口调用失败！\n原因: " + (data.error?.message || "401 未授权，请检查 config.js 中的 API Key 是否正确"));
-            return null;
-        }
-
-        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-            console.error("【致命拦截】LLM 返回数据结构异常:", data);
-            return null;
-        }
-
-        return JSON.parse(data.choices[0].message.content);
-
-    } catch (error) {
-        console.error("【致命拦截】LLM 网络请求彻底断开:", error);
-        alert("网络请求失败，请检查网络连接或 API 代理设置。");
-        return null;
-    }
-}
-
-// ═══════════════════════════════════════════
-// DALL·E 实时剪影生成 (接收 LLM 生成的 imagePrompt)
-// ═══════════════════════════════════════════
-async function generateSilhouette(imagePrompt) {
-  console.log("[MindScape] 正在调用 API 生图...");
-
-  if (!OPENAI_API_KEY) {
-    console.error("[MindScape] OPENAI_API_KEY 未配置");
-    return null;
-  }
-
-  try {
-    const response = await fetch(`${OPENAI_BASE_URL}/images/generations`, {
+    const response = await fetch(MINDSCAPE_API_URL + "/analyze", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-image-2",
-        prompt: imagePrompt,
-        n: 1,
-        size: "1024x1024",
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: text }),
     });
 
     const data = await response.json();
-    console.log("【API返回】", JSON.stringify(data).substring(0, 300));
 
-    let imageUrl = null;
-    if (data.data && data.data[0] && data.data[0].b64_json) {
-      imageUrl = "data:image/png;base64," + data.data[0].b64_json;
-    } else if (data.data && data.data[0] && data.data[0].url) {
-      imageUrl = data.data[0].url;
-    } else if (data.url) {
-      imageUrl = data.url;
-    }
-
-    if (!imageUrl) {
-      console.error("无法解析图片 URL，原始数据:", JSON.stringify(data).substring(0, 200));
+    if (!response.ok || !data.success) {
+      console.error("【API 错误】", data.error || "未知错误");
+      alert("生成失败：" + (data.error || "请检查后端服务是否正常"));
       return null;
     }
 
-    console.log("生图成功！", imageUrl.substring(0, 80));
-    return imageUrl;
+    console.log("[MindScape] API 返回成功:", data.themeColor);
+    return { imageUrl: data.imageUrl, themeColor: data.themeColor };
+
   } catch (error) {
-    console.error("[MindScape] 请求失败:", error);
+    console.error("【API 不可达】", error);
+    alert("无法连接到后端服务，请检查网络或服务器状态。");
     return null;
   }
 }
@@ -685,20 +589,10 @@ diaryInput.addEventListener("keydown", async (e) => {
   const oldSystem = particleSystem;
   if (oldSystem && oldSystem.points) oldSystem.startLoadingAnimation();
 
-  // ① LLM 分析日记 → 提取 imagePrompt + themeColor
-  const analysis = await analyzeDiaryWithLLM(text);
-  if (!analysis || !analysis.imagePrompt) {
-    console.error("[MindScape] LLM 分析失败，无 imagePrompt");
-    if (oldSystem && oldSystem.points) oldSystem.stopLoadingAnimation();
-    e.target.placeholder = "今天感觉如何？";
-    diaryInput.disabled = false;
-    return;
-  }
-
-  // ② LLM 生成的 imagePrompt → 生图 API
-  const imageUrl = await generateSilhouette(analysis.imagePrompt);
-
-  if (!imageUrl) {
+  // ① 调用后端 API：分析日记 + 生图（一次调用完成）
+  const result = await analyzeAndGenerate(text);
+  if (!result || !result.imageUrl) {
+    console.error("[MindScape] 后端 API 返回失败");
     if (oldSystem && oldSystem.points) oldSystem.stopLoadingAnimation();
     e.target.placeholder = "今天感觉如何？";
     diaryInput.disabled = false;
@@ -710,8 +604,9 @@ diaryInput.addEventListener("keydown", async (e) => {
     await oldSystem.disperseParticles(0.75);
   }
 
-  // ③ LLM 生成的优雅颜色
-  const color = analysis.themeColor || "#803E4D";
+  // ② 后端返回的颜色和图片
+  const imageUrl = result.imageUrl;
+  const color = result.themeColor || "#803E4D";
   particleSystem = new ImageToParticles(imageUrl, { step: 8, nebulaRadius: 14 });
 
   try {
