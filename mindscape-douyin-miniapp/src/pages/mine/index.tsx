@@ -87,7 +87,9 @@ const SettingsPage: React.FC = () => {
             autoHeight
             onInput={(e) => setTextAnalysisOpenAIConfigJson(e.detail.value)}
           />
-          <Text className={styles.hint}>body 中可用占位符：{{ PROMPT }}、{{ EMOTION_COLOR }}。</Text>
+          <Text className={styles.hint}>
+            body 中可用占位符：{'{{PROMPT}}'}、{'{{EMOTION_COLOR}}'}。
+          </Text>
         </View>
         <View className={styles.field}>
           <Text className={styles.label}>文本分析默认 API Key（可选）</Text>
