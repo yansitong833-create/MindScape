@@ -10,7 +10,7 @@ import { useApplyTheme } from '@/hooks/useApplyTheme';
 import { THEME_OPTIONS } from '@/utils/theme';
 
 const SettingsPage: React.FC = () => {
-  useApplyTheme();
+  const { primary } = useApplyTheme();
 
   const themePreset = useSettingsStore((s) => s.themePreset);
 
@@ -48,12 +48,12 @@ const SettingsPage: React.FC = () => {
   return (
     <View className={styles.container}>
       <View className={styles.content}>
-        <Text className={styles.sectionTitle}>主题色</Text>
+        <Text className={styles.sectionTitle} style={{ color: primary }}>主题</Text>
 
         <View className={styles.list}>
           <View className={styles.item} onClick={openThemePicker}>
             <View className={styles.itemLeft}>
-              <Text className={styles.itemTitle}>主题色</Text>
+              <Text className={styles.itemTitle}>主题</Text>
               <Text className={styles.itemDesc}>切换按钮与标签的强调色</Text>
             </View>
             <View className={styles.itemRight}>
@@ -63,14 +63,14 @@ const SettingsPage: React.FC = () => {
           </View>
         </View>
 
-        <Text className={styles.sectionTitle}>数据</Text>
+        <Text className={styles.sectionTitle} style={{ color: primary }}>数据</Text>
         <Card title="本机日记" subtitle={`当前保存 ${entryCount} 条`} headerRight={null}>
           <PrimaryButton variant="secondary" onClick={confirmClear}>
             清空本机日记
           </PrimaryButton>
         </Card>
 
-        <Text className={styles.sectionTitle}>说明</Text>
+        <Text className={styles.sectionTitle} style={{ color: primary }}>说明</Text>
         <Card title="关于数据" subtitle="日记保存在本机，不会自动上传。">
           <Text className={styles.hint}>
             你可以在“查阅”页按月份查看日历分布，也可以在“日记”页新增、编辑、删除条目。

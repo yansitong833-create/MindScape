@@ -11,7 +11,7 @@ import { useApplyTheme } from '@/hooks/useApplyTheme';
 const MOODS: Mood[] = ['平静', '开心', '低落', '焦虑', '疲惫'];
 
 const DiaryEditPage: React.FC = () => {
-  useApplyTheme();
+  const { primary } = useApplyTheme();
 
   const router = useRouter();
   const id = useMemo(() => (router.params?.id ? decodeURIComponent(router.params.id) : ''), [router.params]);
@@ -62,7 +62,7 @@ const DiaryEditPage: React.FC = () => {
         <Text className={styles.back} onClick={goBack}>
           ‹ 返回
         </Text>
-        <Text className={styles.barTitle}>{isEdit ? '编辑日记' : '新增日记'}</Text>
+        <Text className={styles.barTitle} style={{ color: primary }}>{isEdit ? '编辑日记' : '新增日记'}</Text>
         <View className={styles.barRight} />
       </View>
 

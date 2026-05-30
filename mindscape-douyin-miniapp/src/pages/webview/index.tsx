@@ -8,7 +8,7 @@ import { useSettingsStore } from '@/store/useSettingsStore';
 import { useApplyTheme } from '@/hooks/useApplyTheme';
 
 const WebviewPage: React.FC = () => {
-  useApplyTheme();
+  const { primary } = useApplyTheme();
 
   const router = useRouter();
   const fallbackUrl = useSettingsStore((s) => s.webUrl);
@@ -32,7 +32,7 @@ const WebviewPage: React.FC = () => {
         <Text className={styles.back} onClick={goBack}>
           ‹ 返回
         </Text>
-        <Text className={styles.barTitle}>3D 心境</Text>
+        <Text className={styles.barTitle} style={{ color: primary }}>3D 心境</Text>
         <View className={styles.barRight} />
       </View>
       {url ? (

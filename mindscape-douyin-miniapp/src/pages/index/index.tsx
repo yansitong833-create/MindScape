@@ -1,14 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Button } from '@tarojs/components';
+import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
-import Card from '@/components/Card';
+import Scrapbook from '@/components/Scrapbook';
 import { useDiaryStore } from '@/store/useDiaryStore';
 import { useApplyTheme } from '@/hooks/useApplyTheme';
 import dayjs from 'dayjs';
 import type { Mood } from '@/types/diary';
 
 const HomePage: React.FC = () => {
-  useApplyTheme();
+  const { primary } = useApplyTheme();
 
   const entries = useDiaryStore((s) => s.entries);
   const now = useMemo(() => dayjs(), []);
@@ -77,11 +78,6 @@ const HomePage: React.FC = () => {
     return monthStart.format('YYYY-MM-DD');
   }, [monthStart, selectedDate, selectedInMonth]);
 
-  const selectedList = useMemo(() => {
-    const list = groupedByDate.get(selectedDateForView) ?? [];
-    return list.slice().sort((a, b) => b.createdAt - a.createdAt);
-  }, [groupedByDate, selectedDateForView]);
-
   const calendarCells = useMemo(() => {
     const startWeekday = monthStart.day();
     const daysInMonth = monthStart.daysInMonth();
@@ -99,17 +95,12 @@ const HomePage: React.FC = () => {
   return (
     <View className={styles.container}>
       <View className={styles.content}>
-        <View className={styles.hero}>
-          <Text className={styles.title}>查阅</Text>
-          <Text className={styles.subtitle}>按月份查看日历与本月记录。</Text>
-        </View>
-
         <View className={styles.calendarSection}>
           <View className={styles.calendarHeader}>
             <Button className={styles.navBtn} onClick={() => setMonthCursor(monthStart.subtract(1, 'month').format('YYYY-MM'))}>
               <Text>‹</Text>
             </Button>
-            <Text className={styles.monthText}>{monthLabel}</Text>
+            <Text className={styles.monthText} style={{ color: primary }}>{monthLabel}</Text>
             <Button className={styles.navBtn} onClick={() => setMonthCursor(monthStart.add(1, 'month').format('YYYY-MM'))}>
               <Text>›</Text>
             </Button>
@@ -144,7 +135,12 @@ const HomePage: React.FC = () => {
                       background: bg,
                       borderColor: isSelected ? '#1D2129' : 'transparent',
                     }}
-                    onClick={() => setSelectedDate(cell.date)}
+                    onClick={() => {
+                      setSelectedDate(cell.date);
+                      Taro.navigateTo({
+                        url: `/pages/scrapbook/index?scope=day&date=${encodeURIComponent(cell.date)}&readonly=1`,
+                      });
+                    }}
                   >
                     <View className={styles.dayInner}>
                       <Text className={styles.dayText} style={{ color: dayColor }}>
@@ -156,27 +152,9 @@ const HomePage: React.FC = () => {
               );
             })}
           </View>
-
-          <View className={styles.dayRecords}>
-            <Text className={styles.sectionTitle}>{dayjs(selectedDateForView).format('M月D日')}</Text>
-            {selectedList.length === 0 ? (
-              <Text className={styles.emptyHint}>暂无记录</Text>
-            ) : (
-              <View className={styles.recordList}>
-                {selectedList.map((r) => (
-                  <View key={r.id} className={styles.recordItem}>
-                    <View className={styles.recordBar} style={{ background: moodColors[r.mood] }} />
-                    <Text className={styles.recordText}>{r.content}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
         </View>
 
-        <Card title="月度日记情况" subtitle="功能开发中">
-          <View className={styles.placeholder} />
-        </Card>
+        <Scrapbook scope="month" date={monthCursor} entries={monthEntries} />
       </View>
     </View>
   );

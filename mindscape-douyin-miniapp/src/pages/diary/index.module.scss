@@ -7,91 +7,10 @@
   background: $color-bg-card;
 }
 
-.listArea {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.list {
+.body {
   width: 100%;
+  margin: 0 auto;
   max-width: $max-content-width;
-}
-
-.list> :not(:first-child) {
-  margin-top: $spacing-md;
-}
-
-.entryCard {
-  width: 100%;
-}
-
-.cardTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: $spacing-sm;
-}
-
-.metaLeft {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-}
-
-.metaLeft> :not(:first-child) {
-  margin-left: $spacing-sm;
-}
-
-.mood {
-  font-size: $font-size-sm;
-  color: $color-text-white;
-  padding: 0 $spacing-sm;
-  height: 52rpx;
-  border-radius: 999rpx;
-  display: flex;
-  align-items: center;
-  background: transparent;
-  white-space: nowrap;
-}
-
-.time {
-  font-size: $font-size-sm;
-  color: $color-text-tertiary;
-  @include text-ellipsis;
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-}
-
-.actions> :not(:first-child) {
-  margin-left: $spacing-sm;
-}
-
-.actionBtn {
-  @include button-reset;
-  height: 64rpx;
-  border-radius: 999rpx;
-  padding: 0 20rpx;
-  font-size: $font-size-sm;
-  background: $color-bg-card;
-  border: 2rpx solid $color-border;
-  box-sizing: border-box;
-  min-width: 120rpx;
-
-  &:active {
-    opacity: 0.92;
-    transform: scale(0.98);
-  }
-}
-
-.contentText {
-  font-size: $font-size-md;
-  color: $color-text-primary;
-  line-height: $line-height-loose;
-  @include text-ellipsis-multi(4);
 }
 
 .fab {

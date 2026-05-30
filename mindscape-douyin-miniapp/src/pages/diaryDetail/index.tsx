@@ -45,7 +45,7 @@ const DiaryDetailPage: React.FC = () => {
           <Text className={styles.back} onClick={backToList}>
             ‹ 返回
           </Text>
-          <Text className={styles.barTitle}>日记详情</Text>
+          <Text className={styles.barTitle} style={{ color: primary }}>日记详情</Text>
           <View className={styles.barRight} />
         </View>
 

@@ -1,0 +1,61 @@
+@use '@/styles/variables.scss' as *;
+
+.container {
+  min-height: 100vh;
+  padding: $spacing-xl $page-padding 160rpx;
+  box-sizing: border-box;
+  background: $color-bg-card;
+}
+
+.topBar {
+  width: 100%;
+  max-width: $max-content-width;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 auto;
+}
+
+.back {
+  font-size: $font-size-md;
+  color: $color-text-secondary;
+  padding: $spacing-sm 0;
+}
+
+.barTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  letter-spacing: 1rpx;
+}
+
+.barRight {
+  width: 120rpx;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.body {
+  width: 100%;
+  margin: $spacing-lg auto 0;
+  max-width: $max-content-width;
+}
+
+.fab {
+  position: fixed;
+  right: $page-padding;
+  bottom: 110rpx;
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+}
+
+.fabIcon {
+  font-size: 48rpx;
+  color: $color-text-white;
+}

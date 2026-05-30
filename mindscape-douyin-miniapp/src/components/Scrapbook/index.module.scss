@@ -1,0 +1,142 @@
+@use '@/styles/variables.scss' as *;
+
+.container {
+  width: 100%;
+  max-width: $max-content-width;
+}
+
+.header {
+  margin-bottom: $spacing-lg;
+}
+
+.title {
+  display: block;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  letter-spacing: 1rpx;
+}
+
+.subtitle {
+  display: block;
+  margin-top: $spacing-md;
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  letter-spacing: 0.5rpx;
+  line-height: $line-height-loose;
+}
+
+.cloud {
+  width: 100%;
+  height: 220rpx;
+  border-radius: $radius-lg;
+  border: 2rpx solid $color-border;
+  overflow: hidden;
+  position: relative;
+  background: $color-bg-card;
+}
+
+.particle {
+  position: absolute;
+  border-radius: 999rpx;
+}
+
+.list {
+  margin-top: $spacing-lg;
+}
+
+.dateGroup + .dateGroup {
+  margin-top: $spacing-lg;
+}
+
+.dateTitle {
+  display: block;
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  margin-bottom: $spacing-sm;
+  letter-spacing: 0.5rpx;
+}
+
+.item {
+  border: 2rpx solid $color-border;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  box-sizing: border-box;
+  background: $color-bg-card;
+}
+
+.item + .item {
+  margin-top: $spacing-md;
+}
+
+.itemTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+}
+
+.metaLeft {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.metaLeft > :not(:first-child) {
+  margin-left: $spacing-sm;
+}
+
+.moodBadge {
+  height: 52rpx;
+  padding: 0 $spacing-sm;
+  border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.moodText {
+  font-size: $font-size-sm;
+  color: $color-text-white;
+  white-space: nowrap;
+}
+
+.time {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+  @include text-ellipsis;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+}
+
+.actions > :not(:first-child) {
+  margin-left: $spacing-sm;
+}
+
+.actionBtn {
+  @include button-reset;
+  height: 64rpx;
+  border-radius: 999rpx;
+  padding: 0 20rpx;
+  font-size: $font-size-sm;
+  background: $color-bg-card;
+  border: 2rpx solid $color-border;
+  box-sizing: border-box;
+  min-width: 120rpx;
+
+  &:active {
+    opacity: 0.92;
+    transform: scale(0.98);
+  }
+}
+
+.contentText {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  line-height: $line-height-loose;
+  @include text-ellipsis-multi(6);
+}

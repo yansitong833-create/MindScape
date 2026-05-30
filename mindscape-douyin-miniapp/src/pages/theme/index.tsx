@@ -8,7 +8,7 @@ import { THEME_OPTIONS, isDarkColor, mixHex } from '@/utils/theme';
 import { useApplyTheme } from '@/hooks/useApplyTheme';
 
 const ThemePage: React.FC = () => {
-  useApplyTheme();
+  const { primary } = useApplyTheme();
 
   const themePreset = useSettingsStore((s) => s.themePreset);
   const setThemePreset = useSettingsStore((s) => s.setThemePreset);
@@ -34,7 +34,7 @@ const ThemePage: React.FC = () => {
           <Text className={styles.back} onClick={goBack}>
             ‹ 返回
           </Text>
-          <Text className={styles.barTitle}>主题色</Text>
+          <Text className={styles.barTitle} style={{ color: primary }}>主题</Text>
           <View className={styles.barRight} />
         </View>
 
