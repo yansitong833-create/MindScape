@@ -1,12 +1,15 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, Button } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import dayjs from 'dayjs';
 import styles from './index.module.scss';
 import EmptyState from '@/components/EmptyState';
-import type { DiaryEntry, Mood } from '@/types/diary';
+import PrimaryButton from '@/components/PrimaryButton';
+import type { ColorTag, DiaryEntry } from '@/types/diary';
 import { useSettingsStore } from '@/store/useSettingsStore';
-import { getThemeColors } from '@/utils/theme';
+import { useDiaryStore } from '@/store/useDiaryStore';
+import { getThemeColors, mixHex } from '@/utils/theme';
+import { LOG_ANALYSIS_PROMPT } from '@/utils/prompts';
 
 export type ScrapbookScope = 'day' | 'month';
 
@@ -20,13 +23,7 @@ export interface ScrapbookProps {
   onDelete?: (id: string) => void;
 }
 
-const MOOD_COLORS: Record<Mood, string> = {
-  开心: '#00B42A',
-  平静: '#00B8A9',
-  低落: '#4E5969',
-  焦虑: '#FF7D00',
-  疲惫: '#6D5DFE',
-};
+const DEFAULT_EMOTION_COLOR: ColorTag = '#00B8A9';
 
 const hashString = (s: string): number => {
   let h = 2166136261;
@@ -58,6 +55,13 @@ const Scrapbook: React.FC<ScrapbookProps> = ({
 }) => {
   const themePreset = useSettingsStore((s) => s.themePreset);
   const theme = useMemo(() => getThemeColors(themePreset), [themePreset]);
+  const textAnalysisOpenAIConfigJson = useSettingsStore((s) => s.textAnalysisOpenAIConfigJson);
+  const textAnalysisDefaultApiKey = useSettingsStore((s) => s.textAnalysisDefaultApiKey);
+
+  const upsertCloudPage = useDiaryStore((s) => s.upsertCloudPage);
+  const savedCloudPage = useDiaryStore((s) => s.getCloudPage({ scope, date }));
+
+  const [generating, setGenerating] = useState(false);
 
   const title = useMemo(() => {
     if (scope === 'month') return dayjs(`${date}-01`).format('YYYY 年 M 月');
@@ -86,25 +90,25 @@ const Scrapbook: React.FC<ScrapbookProps> = ({
     return keys.map((k) => ({ key: k, label: dayjs(k).format('M 月 D 日'), list: map.get(k) ?? [] }));
   }, [date, scope, sorted]);
 
-  const majorMood = useMemo(() => {
+  const emotionColor = useMemo<ColorTag | null>(() => {
     if (sorted.length === 0) return null;
-    const counter = new Map<Mood, number>();
-    sorted.forEach((e) => counter.set(e.mood, (counter.get(e.mood) ?? 0) + 1));
-    let best = sorted[0].mood;
+    const counter = new Map<ColorTag, number>();
+    sorted.forEach((e) => counter.set(e.color, (counter.get(e.color) ?? 0) + 1));
+    let best = sorted[0].color;
     let bestCount = -1;
-    counter.forEach((count, mood) => {
+    counter.forEach((count, color) => {
       if (count > bestCount) {
         bestCount = count;
-        best = mood;
+        best = color;
       }
     });
     return best;
   }, [sorted]);
 
-  const seed = useMemo(() => hashString(`${scope}:${date}:${majorMood ?? 'none'}`), [date, majorMood, scope]);
+  const seed = useMemo(() => hashString(`${scope}:${date}:${emotionColor ?? 'none'}`), [date, emotionColor, scope]);
   const particles = useMemo(() => {
     const rnd = mulberry32(seed);
-    const base = majorMood ? MOOD_COLORS[majorMood] : '#86909C';
+    const base = emotionColor ?? '#86909C';
     const list: Array<{ left: string; top: string; size: string; opacity: number; background: string }> = [];
 
     const count = 72;
@@ -130,7 +134,7 @@ const Scrapbook: React.FC<ScrapbookProps> = ({
       });
     }
     return list;
-  }, [majorMood, seed]);
+  }, [emotionColor, seed]);
 
   const onClickEdit = (id: string) => {
     if (onEdit) return onEdit(id);
@@ -148,6 +152,159 @@ const Scrapbook: React.FC<ScrapbookProps> = ({
         if (!res.confirm) return;
       },
     });
+  };
+
+  const buildInputDiaryText = (list: DiaryEntry[]) => {
+    return list
+      .slice()
+      .sort((a, b) => a.createdAt - b.createdAt)
+      .map((e) => e.content.trim())
+      .filter(Boolean)
+      .join('; ');
+  };
+
+  const fillPrompt = (template: string, diaryText: string) => {
+    return template.replaceAll('{{用户输入的日记文本}}', diaryText);
+  };
+
+  const parseConfigJson = (raw: string) => {
+    const s = raw.trim();
+    if (!s) return null;
+    try {
+      return JSON.parse(s) as any;
+    } catch {
+      return null;
+    }
+  };
+
+  const applyVars = (value: any, vars: Record<string, string>): any => {
+    if (typeof value === 'string') {
+      let out = value;
+      Object.keys(vars).forEach((k) => {
+        out = out.replaceAll(k, vars[k]);
+      });
+      return out;
+    }
+    if (Array.isArray(value)) return value.map((v) => applyVars(v, vars));
+    if (value && typeof value === 'object') {
+      const out: Record<string, any> = {};
+      Object.keys(value).forEach((k) => {
+        out[k] = applyVars(value[k], vars);
+      });
+      return out;
+    }
+    return value;
+  };
+
+  const extractModelText = (payload: any): string => {
+    if (payload == null) return '';
+    if (typeof payload === 'string') return payload;
+    if (typeof payload?.text === 'string') return payload.text;
+    if (typeof payload?.result === 'string') return payload.result;
+    if (typeof payload?.output === 'string') return payload.output;
+    if (typeof payload?.data === 'string') return payload.data;
+    if (typeof payload?.data?.text === 'string') return payload.data.text;
+    if (typeof payload?.data?.result === 'string') return payload.data.result;
+
+    const choiceText = payload?.choices?.[0]?.message?.content;
+    if (typeof choiceText === 'string') return choiceText;
+    const choiceText2 = payload?.choices?.[0]?.text;
+    if (typeof choiceText2 === 'string') return choiceText2;
+
+    try {
+      return JSON.stringify(payload);
+    } catch {
+      return String(payload);
+    }
+  };
+
+  const generateCloudPageStub = (text: string) => text;
+
+  const generateIllustration = async () => {
+    if (generating) return;
+    if (sorted.length === 0) {
+      Taro.showToast({ title: '暂无记录', icon: 'none' });
+      return;
+    }
+    if (!textAnalysisOpenAIConfigJson.trim()) {
+      Taro.showToast({ title: '请先在设置中填写文本分析配置', icon: 'none' });
+      return;
+    }
+
+    const diaryText = buildInputDiaryText(sorted);
+    if (!diaryText) {
+      Taro.showToast({ title: '内容为空', icon: 'none' });
+      return;
+    }
+
+    const dominantColor = emotionColor ?? DEFAULT_EMOTION_COLOR;
+    const prompt = fillPrompt(LOG_ANALYSIS_PROMPT, diaryText);
+
+    try {
+      setGenerating(true);
+      Taro.showLoading({ title: '生成中…' });
+
+      const config = parseConfigJson(textAnalysisOpenAIConfigJson);
+      const url = typeof config?.url === 'string' ? config.url.trim() : '';
+      if (!url) {
+        Taro.hideLoading();
+        Taro.showToast({ title: '配置缺少 url', icon: 'none' });
+        return;
+      }
+
+      const apiKey = (typeof config?.apiKey === 'string' ? config.apiKey.trim() : '') || textAnalysisDefaultApiKey;
+      const extraHeaders = config?.headers && typeof config.headers === 'object' ? (config.headers as Record<string, string>) : {};
+
+      const header: Record<string, string> = {
+        'content-type': 'application/json',
+        ...extraHeaders,
+      };
+      if (apiKey) {
+        header.Authorization = `Bearer ${apiKey}`;
+      }
+
+      const baseBody =
+        config?.body && typeof config.body === 'object'
+          ? config.body
+          : {
+            model: typeof config?.model === 'string' ? config.model : 'gpt-5',
+            messages: [{ role: 'user', content: '{{PROMPT}}' }],
+          };
+
+      const data = applyVars(baseBody, {
+        '{{PROMPT}}': prompt,
+        '{{EMOTION_COLOR}}': dominantColor,
+      });
+
+      const res = await Taro.request({
+        url,
+        method: 'POST',
+        header,
+        data,
+      });
+
+      const analysisText = extractModelText(res.data);
+      const pageText = generateCloudPageStub(analysisText);
+
+      upsertCloudPage({ scope, date, emotionColor: dominantColor, text: pageText });
+      Taro.hideLoading();
+      Taro.showToast({ title: '已生成', icon: 'success' });
+      Taro.navigateTo({ url: `/pages/cloud/index?scope=${encodeURIComponent(scope)}&date=${encodeURIComponent(date)}` });
+    } catch (e) {
+      Taro.hideLoading();
+      const msg = e instanceof Error ? e.message : '请求失败';
+      Taro.showToast({ title: msg.slice(0, 18), icon: 'none' });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const openCloudPage = () => {
+    if (!savedCloudPage) {
+      Taro.showToast({ title: '还未生成', icon: 'none' });
+      return;
+    }
+    Taro.navigateTo({ url: `/pages/cloud/index?scope=${encodeURIComponent(scope)}&date=${encodeURIComponent(date)}` });
   };
 
   return (
@@ -177,6 +334,15 @@ const Scrapbook: React.FC<ScrapbookProps> = ({
         ))}
       </View>
 
+      <View className={styles.illustrationActions}>
+        <PrimaryButton disabled={generating} onClick={generateIllustration}>
+          {savedCloudPage ? '重新生成插图' : '生成插图'}
+        </PrimaryButton>
+        <PrimaryButton variant="secondary" disabled={!savedCloudPage} onClick={openCloudPage}>
+          查看插图
+        </PrimaryButton>
+      </View>
+
       <View className={styles.list}>
         {sorted.length === 0 ? (
           <EmptyState title="暂无记录" description="先写下一句话，记录会显示在这里。" />
@@ -185,12 +351,16 @@ const Scrapbook: React.FC<ScrapbookProps> = ({
             <View key={g.key} className={styles.dateGroup}>
               {g.label ? <Text className={styles.dateTitle}>{g.label}</Text> : null}
               {g.list.map((entry) => (
-                <View key={entry.id} className={styles.item}>
+                <View
+                  key={entry.id}
+                  className={styles.item}
+                  style={{
+                    background: mixHex(entry.color, '#FFFFFF', 0.88),
+                    borderColor: mixHex(entry.color, '#FFFFFF', 0.68),
+                  }}
+                >
                   <View className={styles.itemTop}>
                     <View className={styles.metaLeft}>
-                      <View className={styles.moodBadge} style={{ background: MOOD_COLORS[entry.mood] }}>
-                        <Text className={styles.moodText}>{entry.mood}</Text>
-                      </View>
                       <Text className={styles.time}>{dayjs(entry.createdAt).format('HH:mm')}</Text>
                     </View>
 
@@ -199,7 +369,7 @@ const Scrapbook: React.FC<ScrapbookProps> = ({
                         {allowEdit ? (
                           <Button
                             className={styles.actionBtn}
-                            style={{ borderColor: MOOD_COLORS[entry.mood], color: MOOD_COLORS[entry.mood] }}
+                            style={{ borderColor: entry.color, color: entry.color }}
                             onClick={() => onClickEdit(entry.id)}
                           >
                             编辑

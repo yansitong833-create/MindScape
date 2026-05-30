@@ -54,9 +54,7 @@ const DiaryDetailPage: React.FC = () => {
         ) : (
           <Card title="">
             <View className={styles.metaRow}>
-              <View className={styles.mood} style={{ background: primary }}>
-                <Text>{entry.mood}</Text>
-              </View>
+              <View className={styles.mood} style={{ background: entry.color }} />
               <Text className={styles.time}>{dayjs(entry.createdAt).format('YYYY-MM-DD HH:mm')}</Text>
             </View>
             <Text className={styles.text}>{entry.content}</Text>

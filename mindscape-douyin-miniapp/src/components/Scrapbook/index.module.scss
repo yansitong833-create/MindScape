@@ -41,11 +41,21 @@
   border-radius: 999rpx;
 }
 
+.illustrationActions {
+  margin-top: $spacing-md;
+  display: flex;
+  flex-direction: column;
+}
+
+.illustrationActions> :not(:first-child) {
+  margin-top: $spacing-sm;
+}
+
 .list {
   margin-top: $spacing-lg;
 }
 
-.dateGroup + .dateGroup {
+.dateGroup+.dateGroup {
   margin-top: $spacing-lg;
 }
 
@@ -66,7 +76,7 @@
   background: $color-bg-card;
 }
 
-.item + .item {
+.item+.item {
   margin-top: $spacing-md;
 }
 
@@ -83,7 +93,7 @@
   min-width: 0;
 }
 
-.metaLeft > :not(:first-child) {
+.metaLeft> :not(:first-child) {
   margin-left: $spacing-sm;
 }
 
@@ -113,7 +123,7 @@
   align-items: center;
 }
 
-.actions > :not(:first-child) {
+.actions> :not(:first-child) {
   margin-left: $spacing-sm;
 }
 

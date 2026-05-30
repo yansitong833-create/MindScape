@@ -62,16 +62,30 @@
   line-height: $line-height-loose;
 }
 
-.moodRow {
+.colorRow {
   display: flex;
   flex-wrap: wrap;
   margin-left: -$spacing-sm;
   margin-top: $spacing-sm;
 }
 
-.moodItem {
+.colorItem {
   margin-left: $spacing-sm;
   margin-top: $spacing-sm;
+}
+
+.colorBtn {
+  @include button-reset;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 999rpx;
+  border: 4rpx solid transparent;
+  box-sizing: border-box;
+
+  &:active {
+    opacity: 0.92;
+    transform: scale(0.98);
+  }
 }
 
 .actions {
@@ -80,6 +94,6 @@
   flex-direction: column;
 }
 
-.actions > :not(:first-child) {
+.actions> :not(:first-child) {
   margin-top: $spacing-sm;
 }

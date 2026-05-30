@@ -6,6 +6,7 @@ export default defineAppConfig({
     'pages/webview/index',
     'pages/diaryDetail/index',
     'pages/scrapbook/index',
+    'pages/cloud/index',
     'pages/diaryEdit/index',
     'pages/theme/index'
   ],

@@ -1,14 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, Textarea } from '@tarojs/components';
+import { View, Text, Textarea, Button } from '@tarojs/components';
 import Taro, { useRouter } from '@tarojs/taro';
 import styles from './index.module.scss';
-import Tag from '@/components/Tag';
 import PrimaryButton from '@/components/PrimaryButton';
-import type { Mood } from '@/types/diary';
+import type { ColorTag } from '@/types/diary';
+import { COLOR_TAGS } from '@/types/diary';
 import { useDiaryStore } from '@/store/useDiaryStore';
 import { useApplyTheme } from '@/hooks/useApplyTheme';
-
-const MOODS: Mood[] = ['平静', '开心', '低落', '焦虑', '疲惫'];
 
 const DiaryEditPage: React.FC = () => {
   const { primary } = useApplyTheme();
@@ -21,7 +19,7 @@ const DiaryEditPage: React.FC = () => {
   const updateEntry = useDiaryStore((s) => s.updateEntry);
 
   const [content, setContent] = useState<string>('');
-  const [mood, setMood] = useState<Mood>('平静');
+  const [color, setColor] = useState<ColorTag>(COLOR_TAGS[1]);
 
   const isEdit = Boolean(id);
 
@@ -30,7 +28,7 @@ const DiaryEditPage: React.FC = () => {
     const entry = getEntryById(id);
     if (!entry) return;
     setContent(entry.content);
-    setMood(entry.mood);
+    setColor(entry.color);
   }, [getEntryById, id]);
 
   const goBack = () => {
@@ -45,13 +43,13 @@ const DiaryEditPage: React.FC = () => {
     }
 
     if (isEdit) {
-      updateEntry({ id, content: trimmed, mood });
+      updateEntry({ id, content: trimmed, color });
       Taro.showToast({ title: '已保存', icon: 'success' });
       goBack();
       return;
     }
 
-    addEntry({ content: trimmed, mood });
+    addEntry({ content: trimmed, color });
     Taro.showToast({ title: '已创建', icon: 'success' });
     goBack();
   };
@@ -77,16 +75,25 @@ const DiaryEditPage: React.FC = () => {
         />
 
         <Text className={styles.label} style={{ marginTop: 24 }}>
-          情绪
+          颜色标签
         </Text>
-        <View className={styles.moodRow}>
-          {MOODS.map((m) => (
-            <View key={m} className={styles.moodItem}>
-              <Tag active={mood === m} onClick={() => setMood(m)}>
-                {m}
-              </Tag>
-            </View>
-          ))}
+        <View className={styles.colorRow}>
+          {COLOR_TAGS.map((c) => {
+            const active = color === c;
+            return (
+              <View key={c} className={styles.colorItem}>
+                <Button
+                  className={styles.colorBtn}
+                  style={{
+                    background: c,
+                    borderColor: active ? '#1D2129' : 'transparent',
+                    boxShadow: active ? '0 0 0 2rpx rgba(29,33,41,0.25)' : 'none',
+                  }}
+                  onClick={() => setColor(c)}
+                />
+              </View>
+            );
+          })}
         </View>
 
         <View className={styles.actions}>

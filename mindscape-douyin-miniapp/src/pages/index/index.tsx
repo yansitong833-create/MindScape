@@ -6,7 +6,7 @@ import Scrapbook from '@/components/Scrapbook';
 import { useDiaryStore } from '@/store/useDiaryStore';
 import { useApplyTheme } from '@/hooks/useApplyTheme';
 import dayjs from 'dayjs';
-import type { Mood } from '@/types/diary';
+import type { ColorTag } from '@/types/diary';
 
 const HomePage: React.FC = () => {
   const { primary } = useApplyTheme();
@@ -19,17 +19,6 @@ const HomePage: React.FC = () => {
   const monthEnd = useMemo(() => monthStart.endOf('month'), [monthStart]);
   const monthLabel = useMemo(() => monthStart.format('YYYY年M月'), [monthStart]);
 
-  const moodColors = useMemo<Record<Mood, string>>(
-    () => ({
-      开心: '#00B42A',
-      平静: '#00B8A9',
-      低落: '#4E5969',
-      焦虑: '#FF7D00',
-      疲惫: '#6D5DFE',
-    }),
-    []
-  );
-
   const monthEntries = useMemo(() => {
     const startMs = monthStart.startOf('day').valueOf();
     const endMs = monthEnd.endOf('day').valueOf();
@@ -39,27 +28,27 @@ const HomePage: React.FC = () => {
   }, [entries, monthEnd, monthStart]);
 
   const groupedByDate = useMemo(() => {
-    const map = new Map<string, Array<{ id: string; content: string; mood: Mood; createdAt: number }>>();
+    const map = new Map<string, Array<{ id: string; content: string; color: ColorTag; createdAt: number }>>();
     monthEntries.forEach((e) => {
       const key = dayjs(e.createdAt).format('YYYY-MM-DD');
       const list = map.get(key) ?? [];
-      list.push({ id: e.id, content: e.content, mood: e.mood, createdAt: e.createdAt });
+      list.push({ id: e.id, content: e.content, color: e.color, createdAt: e.createdAt });
       map.set(key, list);
     });
     return map;
   }, [monthEntries]);
 
-  const majorMoodByDate = useMemo(() => {
-    const map = new Map<string, Mood>();
+  const majorColorByDate = useMemo(() => {
+    const map = new Map<string, ColorTag>();
     groupedByDate.forEach((list, key) => {
-      const counter = new Map<Mood, number>();
-      list.forEach((e) => counter.set(e.mood, (counter.get(e.mood) ?? 0) + 1));
-      let best: Mood = list[0].mood;
+      const counter = new Map<ColorTag, number>();
+      list.forEach((e) => counter.set(e.color, (counter.get(e.color) ?? 0) + 1));
+      let best: ColorTag = list[0].color;
       let bestCount = -1;
-      counter.forEach((count, mood) => {
+      counter.forEach((count, color) => {
         if (count > bestCount) {
           bestCount = count;
-          best = mood;
+          best = color;
         }
       });
       map.set(key, best);
@@ -122,10 +111,9 @@ const HomePage: React.FC = () => {
 
               const isSelected = cell.date === selectedDateForView;
               const isToday = cell.date === now.format('YYYY-MM-DD');
-              const majorMood = majorMoodByDate.get(cell.date);
-              const moodColor = majorMood ? moodColors[majorMood] : undefined;
-              const bg = moodColor ?? '#FFFFFF';
-              const dayColor = moodColor ? '#FFFFFF' : isToday ? '#1D2129' : '#4E5969';
+              const majorColor = majorColorByDate.get(cell.date);
+              const bg = majorColor ?? '#FFFFFF';
+              const dayColor = majorColor ? '#FFFFFF' : isToday ? '#1D2129' : '#4E5969';
 
               return (
                 <View key={cell.key} className={styles.dayCell}>

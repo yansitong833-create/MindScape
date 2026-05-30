@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text } from '@tarojs/components';
+import { View, Text, Input, Textarea } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
 import Card from '@/components/Card';
@@ -13,6 +13,12 @@ const SettingsPage: React.FC = () => {
   const { primary } = useApplyTheme();
 
   const themePreset = useSettingsStore((s) => s.themePreset);
+  const textAnalysisOpenAIConfigJson = useSettingsStore((s) => s.textAnalysisOpenAIConfigJson);
+  const setTextAnalysisOpenAIConfigJson = useSettingsStore((s) => s.setTextAnalysisOpenAIConfigJson);
+  const textAnalysisDefaultApiKey = useSettingsStore((s) => s.textAnalysisDefaultApiKey);
+  const setTextAnalysisDefaultApiKey = useSettingsStore((s) => s.setTextAnalysisDefaultApiKey);
+  const imageGenerationOpenAIConfigJson = useSettingsStore((s) => s.imageGenerationOpenAIConfigJson);
+  const setImageGenerationOpenAIConfigJson = useSettingsStore((s) => s.setImageGenerationOpenAIConfigJson);
 
   const entryCount = useDiaryStore((s) => s.entries.length);
   const clearAll = useDiaryStore((s) => s.clearAll);
@@ -69,6 +75,43 @@ const SettingsPage: React.FC = () => {
             清空本机日记
           </PrimaryButton>
         </Card>
+
+        <Text className={styles.sectionTitle} style={{ color: primary }}>AI</Text>
+        <View className={styles.field}>
+          <Text className={styles.label}>文本分析（OpenAI 兼容）配置 JSON</Text>
+          <Textarea
+            className={styles.textarea}
+            value={textAnalysisOpenAIConfigJson}
+            placeholder={`{\n  "url": "https://api.openai-next.com/v1/chat/completions",\n  "apiKey": "",\n  "body": {\n    "model": "gpt-5",\n    "messages": [\n      { "role": "user", "content": "{{PROMPT}}" }\n    ]\n  }\n}`}
+            maxlength={2400}
+            autoHeight
+            onInput={(e) => setTextAnalysisOpenAIConfigJson(e.detail.value)}
+          />
+          <Text className={styles.hint}>body 中可用占位符：{{ PROMPT }}、{{ EMOTION_COLOR }}。</Text>
+        </View>
+        <View className={styles.field}>
+          <Text className={styles.label}>文本分析默认 API Key（可选）</Text>
+          <Input
+            className={styles.input}
+            value={textAnalysisDefaultApiKey}
+            placeholder="sk-..."
+            password
+            onInput={(e) => setTextAnalysisDefaultApiKey(e.detail.value)}
+          />
+          <Text className={styles.hint}>当 JSON 未填写 apiKey 时，会优先使用这里的 Key。</Text>
+        </View>
+        <View className={styles.field}>
+          <Text className={styles.label}>图片生成（OpenAI 兼容）配置 JSON</Text>
+          <Textarea
+            className={styles.textarea}
+            value={imageGenerationOpenAIConfigJson}
+            placeholder={`{\n  "url": "https://api.openai-next.com/v1/chat/completions",\n  "apiKey": "",\n  "body": {\n    "model": "gpt-5",\n    "messages": [\n      { "role": "user", "content": "{{PROMPT}}" }\n    ]\n  }\n}`}
+            maxlength={2400}
+            autoHeight
+            onInput={(e) => setImageGenerationOpenAIConfigJson(e.detail.value)}
+          />
+          <Text className={styles.hint}>预留给云图生成模块使用（当前模块为占位）。</Text>
+        </View>
 
         <Text className={styles.sectionTitle} style={{ color: primary }}>说明</Text>
         <Card title="关于数据" subtitle="日记保存在本机，不会自动上传。">

@@ -110,6 +110,18 @@
   font-size: $font-size-md;
 }
 
+.textarea {
+  width: 100%;
+  min-height: 220rpx;
+  border-radius: $radius-lg;
+  background: #ffffff;
+  border: 2rpx solid $color-border;
+  padding: $spacing-md;
+  box-sizing: border-box;
+  font-size: $font-size-md;
+  line-height: $line-height-loose;
+}
+
 .hint {
   margin-top: $spacing-sm;
   font-size: $font-size-sm;

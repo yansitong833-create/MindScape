@@ -1,7 +1,8 @@
 import dayjs from 'dayjs';
-import type { DiaryEntry, Mood } from '@/types/diary';
+import type { ColorTag, DiaryEntry } from '@/types/diary';
+import { COLOR_TAGS } from '@/types/diary';
 
-const MOODS: Mood[] = ['平静', '开心', '低落', '焦虑', '疲惫'];
+const COLORS: ColorTag[] = [...COLOR_TAGS];
 
 const CONTENTS = [
   '今天的节奏刚刚好，做了重要的事。',
@@ -29,24 +30,24 @@ export const generateSampleDiaryEntriesForMonth = (monthCursor: string): DiaryEn
   for (let d = 1; d <= daysInMonth; d += 1) {
     const date = monthStart.date(d);
     const weekday = date.day();
-    const baseMood = MOODS[(d + weekday) % MOODS.length];
+    const baseColor = COLORS[(d + weekday) % COLORS.length];
 
     const contentA = `${date.format('M月D日')}：${CONTENTS[(d * 3) % CONTENTS.length]}`;
     list.push({
       id: createSampleId(date.format('YYYY-MM-DD'), 1),
       content: contentA,
-      mood: baseMood,
+      color: baseColor,
       createdAt: date.hour(12).minute(10).second(0).millisecond(0).valueOf(),
     });
 
     const extra = d % 6 === 0 || (weekday === 0 && d % 2 === 0);
     if (extra) {
-      const moodB = MOODS[(d + 2) % MOODS.length];
+      const colorB = COLORS[(d + 2) % COLORS.length];
       const contentB = `${CONTENTS[(d * 5 + 1) % CONTENTS.length]}（补充）`;
       list.push({
         id: createSampleId(date.format('YYYY-MM-DD'), 2),
         content: contentB,
-        mood: moodB,
+        color: colorB,
         createdAt: date.hour(20).minute(30).second(0).millisecond(0).valueOf(),
       });
     }

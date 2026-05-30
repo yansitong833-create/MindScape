@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { DiaryEntry, Mood } from '@/types/diary';
+import type { ColorTag, DiaryEntry } from '@/types/diary';
 import { taroPersistStorage } from '@/utils/persistStorage';
 import { createId } from '@/utils/id';
 import dayjs from 'dayjs';
@@ -8,48 +8,72 @@ import { generateSampleDiaryEntriesForMonth } from '@/data/sampleDiary';
 
 const STORAGE_KEY = 'mindscape:diary';
 
+export type CloudScope = 'day' | 'month';
+
+export interface CloudPage {
+  scope: CloudScope;
+  date: string;
+  emotionColor: ColorTag;
+  text: string;
+  updatedAt: number;
+}
+
 export interface DiaryState {
   entries: DiaryEntry[];
   sampleMonth: string | null;
-  addEntry: (payload: { content: string; mood: Mood }) => DiaryEntry;
-  updateEntry: (payload: { id: string; content: string; mood: Mood }) => void;
+  cloudPages: Record<string, CloudPage>;
+  addEntry: (payload: { content: string; color: ColorTag }) => DiaryEntry;
+  updateEntry: (payload: { id: string; content: string; color: ColorTag }) => void;
   removeEntry: (id: string) => void;
   clearAll: () => void;
   getEntryById: (id: string) => DiaryEntry | undefined;
   ensureMonthSampleVisible: (monthCursor?: string) => void;
+  upsertCloudPage: (payload: Omit<CloudPage, 'updatedAt'> & { updatedAt?: number }) => void;
+  getCloudPage: (payload: { scope: CloudScope; date: string }) => CloudPage | undefined;
 }
+
+const cloudKey = (scope: CloudScope, date: string) => `${scope}:${date}`;
+
+const moodToColorTag = (mood: string): ColorTag => {
+  if (mood === '开心') return '#00B42A';
+  if (mood === '平静') return '#00B8A9';
+  if (mood === '低落') return '#4E5969';
+  if (mood === '焦虑') return '#FF7D00';
+  return '#6D5DFE';
+};
 
 export const useDiaryStore = create<DiaryState>()(
   persist(
     (set, get) => ({
       entries: [],
       sampleMonth: null,
-      addEntry: ({ content, mood }) => {
+      cloudPages: {},
+      addEntry: ({ content, color }) => {
         const entry: DiaryEntry = {
           id: createId(),
           content: content.trim(),
-          mood,
+          color,
           createdAt: Date.now(),
         };
 
         set((state) => ({ entries: [entry, ...state.entries], sampleMonth: state.sampleMonth }));
         return entry;
       },
-      updateEntry: ({ id, content, mood }) =>
+      updateEntry: ({ id, content, color }) =>
         set((state) => ({
           entries: state.entries.map((e) =>
             e.id === id
               ? {
                 ...e,
                 content: content.trim(),
-                mood,
+                color,
               }
               : e
           ),
           sampleMonth: state.sampleMonth,
         })),
       removeEntry: (id) => set((state) => ({ entries: state.entries.filter((e) => e.id !== id) })),
-      clearAll: () => set({ entries: [], sampleMonth: null }),
+      clearAll: () => set({ entries: [], sampleMonth: null, cloudPages: {} }),
       getEntryById: (id) => get().entries.find((e) => e.id === id),
       ensureMonthSampleVisible: (monthCursor) => {
         const state = get();
@@ -70,6 +94,16 @@ export const useDiaryStore = create<DiaryState>()(
         const sample = generateSampleDiaryEntriesForMonth(cursor);
         set({ entries: [...sample, ...filtered].sort((a, b) => b.createdAt - a.createdAt), sampleMonth: cursor });
       },
+      upsertCloudPage: ({ scope, date, emotionColor, text, updatedAt }) =>
+        set((state) => ({
+          cloudPages: {
+            ...state.cloudPages,
+            [cloudKey(scope, date)]: { scope, date, emotionColor, text, updatedAt: updatedAt ?? Date.now() },
+          },
+          entries: state.entries,
+          sampleMonth: state.sampleMonth,
+        })),
+      getCloudPage: ({ scope, date }) => get().cloudPages[cloudKey(scope, date)],
     }),
     {
       name: STORAGE_KEY,
@@ -78,12 +112,29 @@ export const useDiaryStore = create<DiaryState>()(
         setItem: (name, value) => taroPersistStorage.setItem(name, value),
         removeItem: (name) => taroPersistStorage.removeItem(name),
       },
-      version: 2,
+      version: 3,
       migrate: (persistedState) => {
         const state = persistedState as Partial<DiaryState> | undefined;
+        const rawEntries = (state?.entries ?? []) as Array<any>;
+        const entries: DiaryEntry[] = rawEntries.map((e) => {
+          const content = typeof e?.content === 'string' ? e.content : '';
+          const createdAt = typeof e?.createdAt === 'number' ? e.createdAt : Date.now();
+          const id = typeof e?.id === 'string' ? e.id : createId();
+
+          const color =
+            typeof e?.color === 'string'
+              ? (e.color as ColorTag)
+              : typeof e?.mood === 'string'
+                ? moodToColorTag(e.mood)
+                : '#00B8A9';
+
+          return { id, content, createdAt, color };
+        });
+
         return {
-          entries: state?.entries ?? [],
+          entries,
           sampleMonth: (state as any)?.sampleMonth ?? null,
+          cloudPages: (state as any)?.cloudPages ?? {},
         } as unknown as DiaryState;
       },
     }
