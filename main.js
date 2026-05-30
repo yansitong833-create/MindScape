@@ -454,12 +454,13 @@ async function generateSilhouette(text) {
     // 尝试兼容多种常见的中转代理返回格式
     let imageUrl = null;
 
-    if (data.data && data.data[0] && data.data[0].url) {
-      imageUrl = data.data[0].url; // 官方标准格式
+    if (data.data && data.data[0] && data.data[0].b64_json) {
+      // 【完美绝杀】如果是 Base64 数据，直接拼接为 Data URI 格式供 Canvas 读取，彻底告别跨域烦恼！
+      imageUrl = "data:image/png;base64," + data.data[0].b64_json;
+    } else if (data.data && data.data[0] && data.data[0].url) {
+      imageUrl = data.data[0].url; // 官方标准 URL 格式
     } else if (data.url) {
-      imageUrl = data.url; // 某些直返格式
-    } else if (data.data && typeof data.data === "string") {
-      imageUrl = data.data; // 某些简陋代理格式
+      imageUrl = data.url; // 某些直返 URL 格式
     }
 
     if (!imageUrl) {
