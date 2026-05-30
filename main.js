@@ -3,9 +3,17 @@
 // API Key 和 Base URL 从 config.js 读取
 // 本地用户: 复制 config.example.js → config.js，填入你的 Key
 // ═══════════════════════════════════════════
-if (typeof OPENAI_API_KEY === "undefined" || !OPENAI_API_KEY || OPENAI_API_KEY === "sk-your-api-key-here") {
-  console.warn("[MindScape] config.js 未配置或为占位符，请复制 config.example.js → config.js 并填入真实 API Key");
+if (typeof OPENAI_API_KEY === 'undefined' || !OPENAI_API_KEY || OPENAI_API_KEY === 'sk-your-api-key-here') {
+  console.warn('[MindScape] config.js 未配置或为占位符，请复制 config.example.js → config.js 并填入真实 API Key');
 }
+
+// ═══════════════════════════════════════════
+// LLM 配置 (DeepSeek — 情感分析中枢)
+// ═══════════════════════════════════════════
+const LLM_API_KEY = typeof DEEPSEEK_API_KEY !== "undefined" ? DEEPSEEK_API_KEY : OPENAI_API_KEY;
+const LLM_BASE_URL = typeof LLM_BASE_URL_OVERRIDE !== "undefined" ? LLM_BASE_URL_OVERRIDE : "https://api.openai-next.com/v1";
+
+
 
 // ── Three.js 场景初始化 ──
 const canvas = document.getElementById("mindscape-canvas");
@@ -18,13 +26,32 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
-camera.position.set(0, 0, 12);
+camera.position.set(0, 0, 40);
 camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setClearColor(0x000000);
+renderer.setClearColor(0xF9F6F0);
+
+// ═══════════════════════════════════════════
+// 全局鼠标 3D 空间追踪
+// ═══════════════════════════════════════════
+const raycaster = new THREE.Raycaster();
+const mousePlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+const mouseWorld = new THREE.Vector3(9999, 9999, 0);
+const mouseNDC = new THREE.Vector2();
+
+window.addEventListener("mousemove", (event) => {
+  mouseNDC.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouseNDC.y = -(event.clientY / window.innerHeight) * 2 + 1;
+});
+window.addEventListener("touchmove", (e) => {
+  if (e.touches.length) {
+    mouseNDC.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
+    mouseNDC.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
+  }
+}, { passive: true });
 
 // ═══════════════════════════════════════════
 // 内嵌图片素材 (base64 → file:// 安全)
@@ -41,39 +68,49 @@ const IMAGE_STORE = {
 };
 
 // ═══════════════════════════════════════════
+// 手搓高精度圆形发光贴图（告别方形马赛克）
+// ═══════════════════════════════════════════
+function createParticleTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d");
+
+  // 更锐利的渐变：亮核更大，边缘收紧
+  const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  gradient.addColorStop(0, "rgba(255,255,255,1)");
+  gradient.addColorStop(0.45, "rgba(255,255,255,1)");
+  gradient.addColorStop(0.55, "rgba(255,255,255,0.5)");
+  gradient.addColorStop(0.75, "rgba(255,255,255,0.03)");
+  gradient.addColorStop(1, "rgba(255,255,255,0)");
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 128, 128);
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+// ═══════════════════════════════════════════
 // ImageToParticles — 图片像素 → 3D 粒子系统
 // ═══════════════════════════════════════════
 class ImageToParticles {
   constructor(imagePath, options = {}) {
     this.imagePath = imagePath;
-    this.step = options.step ?? 2;
+    this.step = options.step ?? 5;
     this.particleSize = options.size ?? 2;
     this.scale = options.scale ?? 8;
     this.nebulaRadius = options.nebulaRadius ?? 14;
-    this.brightnessThreshold = options.brightnessThreshold ?? 128; // 亮度阈值: 只提取暗色剪影, 跳过白底
+    this.brightnessThreshold = options.brightnessThreshold ?? 128;
 
     this.targetPositions = null;
     this.currentPositions = null;
     this.pointCount = 0;
     this.points = null;
 
-    this.velocities = null;
     this.physicsActive = false;
     this.isLoading = false;
     this._tween = null;
     this._loadingTween = null;
-
-    this.mouseNDC = new THREE.Vector2();
-    this.mouseWorld = new THREE.Vector3();
-    this.raycaster = new THREE.Raycaster();
-    this.targetPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-
-    this.repulsionRadius = 1.5;
-    this.repulsionStrength = 0.22;
-    this.springStiffness = 0.06;
-    this.springDamping = 0.88;
-    this.breathAmplitude = 0.04;
-    this.breathFrequency = 0.0025;
   }
 
   async init() {
@@ -87,7 +124,6 @@ class ImageToParticles {
   async _loadImage(src) {
     let resolvedSrc = IMAGE_STORE[src] || src;
 
-    // 外部 URL → fetch 为 blob → 创建同源 object URL，避免 Canvas 污染
     if (/^https?:\/\//.test(resolvedSrc)) {
       try {
         const response = await fetch(resolvedSrc);
@@ -134,12 +170,10 @@ class ImageToParticles {
         const alpha = data[idx + 3];
         const brightness = (r + g + b) / 3;
 
-        // 核心判定：亮度 < 阈值 (暗色剪影主体) 且 alpha > 128 (非透明)
-        // 白色背景 brightness≈255 直接跳过，避免聚成实心方块
         if (brightness < brightnessThreshold && alpha > 128) {
-          const vx = (x - halfW) * scale;
-          const vy = -(y - halfH) * scale; // Canvas Y轴与3D Y轴反向，必须取负
-          const vz = (Math.random() - 0.5) * 1.5; // 给扁平2D剪影增加前后景深厚度
+          const vx = (x - halfW) * scale + (Math.random() - 0.5) * 0.2;
+          const vy = -(y - halfH) * scale + (Math.random() - 0.5) * 0.2;
+          const vz = (Math.random() - 0.5) * 1.5;
           arr.push(vx, vy, vz);
         }
       }
@@ -169,28 +203,96 @@ class ImageToParticles {
     this.currentPositions = arr;
   }
 
+  // ── 纯星云初始化 ──
+  async initNebulaOnly(count = 2500) {
+    this.pointCount = count;
+    const arr = new Float32Array(count * 3);
+    const { nebulaRadius } = this;
+
+    for (let i = 0; i < count; i++) {
+      const roll = Math.random();
+      let r, theta, phi;
+      if (roll < 0.55) {
+        theta = Math.random() * Math.PI * 2;
+        phi = Math.acos(2 * Math.random() - 1);
+        r = nebulaRadius * (0.55 + Math.random() * 0.45);
+      } else if (roll < 0.85) {
+        theta = Math.random() * Math.PI * 2;
+        phi = Math.acos(2 * Math.random() - 1);
+        r = nebulaRadius * (0.1 + Math.random() * 0.4);
+      } else {
+        theta = Math.random() * Math.PI * 2;
+        phi = Math.PI / 2 + (Math.random() - 0.5) * 0.6;
+        r = nebulaRadius * (0.35 + Math.random() * 0.65);
+      }
+      arr[i * 3]     = Math.sin(phi) * Math.cos(theta) * r;
+      arr[i * 3 + 1] = Math.sin(phi) * Math.sin(theta) * r;
+      arr[i * 3 + 2] = Math.cos(phi) * r;
+    }
+
+    this.currentPositions = arr;
+    this.targetPositions = new Float32Array(arr);
+    return this._createPointCloud();
+  }
+
   _createPointCloud() {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(this.currentPositions, 3));
     geometry.setAttribute("aTarget", new THREE.BufferAttribute(this.targetPositions, 3));
 
+    // 浅色底优雅深色调：复古玫瑰/莫兰迪/松石/雾蓝
+    const PALETTE = [
+      { rgb: [0.50, 0.24, 0.30], weight: 18 }, // 复古玫瑰红 #803E4D
+      { rgb: [0.17, 0.24, 0.31], weight: 16 }, // 深海蓝 #2C3E50
+      { rgb: [0.20, 0.34, 0.26], weight: 14 }, // 松石绿 #345642
+      { rgb: [0.35, 0.30, 0.39], weight: 14 }, // 莫兰迪紫 #5A4C64
+      { rgb: [0.31, 0.22, 0.27], weight: 12 }, // 深灰紫 #4F383F
+      { rgb: [0.55, 0.36, 0.36], weight: 10 }, // 干枯玫瑰 #8C5B5B
+      { rgb: [0.38, 0.26, 0.18], weight: 8  }, // 深可可 #61422E
+      { rgb: [0.22, 0.30, 0.35], weight: 5  }, // 雾蓝 #384D59
+      { rgb: [0.45, 0.35, 0.28], weight: 3  }, // 暖灰褐 #735947
+    ];
+
+    const totalWeight = PALETTE.reduce((s, c) => s + c.weight, 0);
+    const thresholds = [];
+    let acc = 0;
+    for (const c of PALETTE) { acc += c.weight / totalWeight; thresholds.push(acc); }
+
+    const colors = new Float32Array(this.pointCount * 3);
+    for (let i = 0; i < this.pointCount; i++) {
+      const roll = Math.random();
+      let picked = PALETTE[0].rgb;
+      for (let j = 0; j < thresholds.length; j++) {
+        if (roll < thresholds[j]) { picked = PALETTE[j].rgb; break; }
+      }
+      // NormalBlending 下加深层次：深→显色 中→柔和 浅→朦胧
+      const v = Math.random() < 0.15 ? 0.95 + Math.random() * 0.20  // 15% 浓郁
+              : Math.random() < 0.40 ? 0.65 + Math.random() * 0.25  // 40% 标准
+              : 0.35 + Math.random() * 0.25;                         // 45% 浅淡
+      colors[i * 3]     = Math.min(picked[0] * v, 1.0);
+      colors[i * 3 + 1] = Math.min(picked[1] * v, 1.0);
+      colors[i * 3 + 2] = Math.min(picked[2] * v, 1.0);
+    }
+    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
     const material = new THREE.PointsMaterial({
-      size: 0.1,
+      size: 0.40,
+      map: createParticleTexture(),
       color: 0xffffff,
+      vertexColors: true,
       transparent: true,
-      opacity: 0.8,
-      blending: THREE.AdditiveBlending,
+      opacity: 0.85,
       depthWrite: false,
+      blending: THREE.NormalBlending,
+      sizeAttenuation: true,
     });
 
     this.points = new THREE.Points(geometry, material);
     return this.points;
   }
 
-  // ── 聚沙成塔 ──
   assembleParticles(colorHex, duration = 2.5) {
     if (!this.points) return;
-
     if (this._tween) { this._tween.kill(); this._tween = null; }
 
     const startPositions = new Float32Array(this.currentPositions);
@@ -198,19 +300,20 @@ class ImageToParticles {
     const current = this.currentPositions;
     const count = this.pointCount;
     const positionAttr = this.points.geometry.attributes.position;
-    const material = this.points.material;
 
-    if (colorHex) material.color.set(colorHex);
+    // 应用 LLM 生成的优雅深色调到材质
+    if (colorHex) {
+      const tint = new THREE.Color(colorHex);
+      tint.lerp(new THREE.Color(0x5C4B51), 0.3);
+      this.points.material.color.copy(tint);
+    }
 
     const proxy = { progress: 0 };
     const self = this;
-
-    this.physicsActive = false; // 汇聚期间暂停物理
+    this.physicsActive = false;
 
     this._tween = gsap.to(proxy, {
-      progress: 1,
-      duration,
-      ease: "expo.out",
+      progress: 1, duration, ease: "expo.out",
       onUpdate: () => {
         const p = proxy.progress;
         for (let i = 0; i < count * 3; i++) {
@@ -227,11 +330,9 @@ class ImageToParticles {
     });
   }
 
-  // ── 打散飞出 → 销毁 ──
   disperseParticles(duration = 0.9) {
     return new Promise((resolve) => {
       if (!this.points) return resolve();
-
       this.physicsActive = false;
       if (this._tween) { this._tween.kill(); this._tween = null; }
 
@@ -239,7 +340,6 @@ class ImageToParticles {
       const current = this.currentPositions;
       const positionAttr = this.points.geometry.attributes.position;
 
-      // 生成随机远方目标
       const scatterTargets = new Float32Array(count * 3);
       for (let i = 0; i < count; i++) {
         const theta = Math.random() * Math.PI * 2;
@@ -255,9 +355,7 @@ class ImageToParticles {
       const self = this;
 
       gsap.to(proxy, {
-        progress: 1,
-        duration,
-        ease: "power3.in",
+        progress: 1, duration, ease: "power3.in",
         onUpdate: () => {
           const p = proxy.progress;
           for (let i = 0; i < count * 3; i++) {
@@ -278,117 +376,127 @@ class ImageToParticles {
     });
   }
 
-  // ── 激活物理系统 ──
   enablePhysics() {
     if (!this.points) return;
-    this.velocities = new Float32Array(this.pointCount * 3);
     this.physicsActive = true;
-
-    window.addEventListener("mousemove", (e) => {
-      this.mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
-      this.mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
-    });
-    window.addEventListener("touchmove", (e) => {
-      if (e.touches.length) {
-        this.mouseNDC.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
-        this.mouseNDC.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
-      }
-    }, { passive: true });
-
-    console.log("[MindScape] 物理系统已激活 — 移动鼠标推开粒子");
   }
 
-  // ── Loading 加载动画 ──
   startLoadingAnimation() {
     if (!this.points) return;
     this.isLoading = true;
-
-    // 快速旋转 + 无限循环，模拟"正在思考重组"
     if (this._loadingTween) this._loadingTween.kill();
     this._loadingTween = gsap.to(this.points.rotation, {
       y: this.points.rotation.y + Math.PI * 6,
       x: this.points.rotation.x + Math.PI * 3,
-      duration: 6,
-      ease: "linear",
-      repeat: -1,
+      duration: 6, ease: "linear", repeat: -1,
     });
   }
 
   stopLoadingAnimation() {
     this.isLoading = false;
-    if (this._loadingTween) {
-      this._loadingTween.kill();
-      this._loadingTween = null;
-    }
+    if (this._loadingTween) { this._loadingTween.kill(); this._loadingTween = null; }
   }
 
-  // ── 逐帧物理更新 ──
+  // ── 水波扩散：网格位移平均 + 纯 lerp（无速度无振荡）──
+
   updatePhysics() {
-    if (!this.physicsActive || !this.points || !this.velocities) return;
+    if (!this.physicsActive || !this.points) return;
 
-    this.raycaster.setFromCamera(this.mouseNDC, camera);
-    const hit = new THREE.Vector3();
-    this.raycaster.ray.intersectPlane(this.targetPlane, hit);
-    if (hit) this.mouseWorld.copy(hit);
+    raycaster.setFromCamera(mouseNDC, camera);
+    raycaster.ray.intersectPlane(mousePlane, mouseWorld);
 
-    const cur = this.currentPositions;
-    const tgt = this.targetPositions;
-    const vel = this.velocities;
+    const positions = this.points.geometry.attributes.position.array;
+    const targets = this.targetPositions;
     const n = this.pointCount;
-    const now = Date.now();
+    const time = performance.now() * 0.001;
 
-    const rr = this.repulsionRadius;
-    const rs = this.repulsionStrength;
-    const ss = this.springStiffness;
-    const sd = this.springDamping;
-    const ba = this.breathAmplitude;
-    const bf = this.breathFrequency;
-    const mx = this.mouseWorld.x;
-    const my = this.mouseWorld.y;
-    const mz = this.mouseWorld.z;
+    // ── Step 1: 构建空间网格 + 每格每位移平均 ──
+    const cellSize = 3.0;
+    const grid = new Map();
 
     for (let i = 0; i < n; i++) {
       const i3 = i * 3;
-      const cx = cur[i3], cy = cur[i3 + 1], cz = cur[i3 + 2];
-      const tx = tgt[i3], ty = tgt[i3 + 1], tz = tgt[i3 + 2];
+      const cx = Math.floor(positions[i3] / cellSize);
+      const cy = Math.floor(positions[i3 + 1] / cellSize);
+      const key = cx + "," + cy;
+      if (!grid.has(key)) grid.set(key, []);
+      grid.get(key).push(i);
+    }
 
-      const dx = tx - cx, dy = ty - cy, dz = tz - cz;
-      const distToTarget = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-      vel[i3] += dx * ss;
-      vel[i3 + 1] += dy * ss;
-      vel[i3 + 2] += dz * ss;
-
-      const rx = cx - mx, ry = cy - my, rz = cz - mz;
-      const distToMouse = Math.sqrt(rx * rx + ry * ry + rz * rz);
-
-      if (distToMouse < rr && distToMouse > 0.0001) {
-        const strength = (1 - distToMouse / rr) * rs;
-        vel[i3]     += (rx / distToMouse) * strength;
-        vel[i3 + 1] += (ry / distToMouse) * strength;
-        vel[i3 + 2] += (rz / distToMouse) * strength;
+    const cellDX = new Map(), cellDY = new Map(), cellCount = new Map();
+    for (const [key, indices] of grid) {
+      let sx = 0, sy = 0;
+      for (const idx of indices) {
+        const i3 = idx * 3;
+        sx += positions[i3]     - targets[i3];
+        sy += positions[i3 + 1] - targets[i3 + 1];
       }
+      const cnt = indices.length;
+      cellDX.set(key, sx / cnt);
+      cellDY.set(key, sy / cnt);
+      cellCount.set(key, cnt);
+    }
 
-      vel[i3] *= sd; vel[i3 + 1] *= sd; vel[i3 + 2] *= sd;
+    // ── Step 2: 鼠标推动（直接位移，不注能量）──
+    if (!this._lmx) { this._lmx = mouseWorld.x; this._lmy = mouseWorld.y; }
+    this._lmx += (mouseWorld.x - this._lmx) * 0.5;
+    this._lmy += (mouseWorld.y - this._lmy) * 0.5;
 
-      // Loading 态：注入随机抖动，模拟"粒子思考重组"
-      if (this.isLoading) {
-        vel[i3]     += (Math.random() - 0.5) * 0.06;
-        vel[i3 + 1] += (Math.random() - 0.5) * 0.06;
-        vel[i3 + 2] += (Math.random() - 0.5) * 0.06;
+    const mouseR = 8.0;
+    for (let i = 0; i < n; i++) {
+      const i3 = i * 3;
+      const mx = positions[i3] - this._lmx;
+      const my = positions[i3 + 1] - this._lmy;
+      const dist = Math.sqrt(mx * mx + my * my);
+
+      if (dist < mouseR && dist > 0.001) {
+        const f = (1 - dist / mouseR) * 0.15;
+        positions[i3]     += (mx / dist) * f;
+        positions[i3 + 1] += (my / dist) * f;
       }
+    }
 
-      cur[i3] += vel[i3];
-      cur[i3 + 1] += vel[i3 + 1];
-      cur[i3 + 2] += vel[i3 + 2];
-
-      const speed = Math.abs(vel[i3]) + Math.abs(vel[i3 + 1]) + Math.abs(vel[i3 + 2]);
-      if (distToTarget < 0.06 && speed < 0.0015 && distToMouse > rr) {
-        const phase = i * 0.17 + now * bf;
-        cur[i3 + 2] += Math.sin(phase) * ba;
-        cur[i3]     += Math.cos(phase * 1.3) * ba * 0.35;
-        cur[i3 + 1] += Math.sin(phase * 0.9) * ba * 0.35;
+    // ── Step 3: 水波扩散（每格位移与邻居平均，模拟扩散）──
+    const newCellDX = new Map(), newCellDY = new Map();
+    for (const [key, dx] of cellDX) {
+      const [cx, cy] = key.split(",").map(Number);
+      let sumX = dx, sumY = cellDY.get(key), totalW = 1;
+      // 4邻居扩散
+      for (const [nx, ny] of [[2,0],[-2,0],[0,2],[0,-2],[1,1],[1,-1],[-1,1],[-1,-1]]) {
+        const nk = (cx + nx) + "," + (cy + ny);
+        if (cellDX.has(nk)) {
+          sumX += cellDX.get(nk); sumY += cellDY.get(nk);
+          totalW++;
+        }
       }
+      newCellDX.set(key, sumX / totalW * 0.92);
+      newCellDY.set(key, sumY / totalW * 0.92);
+    }
+
+    // ── Step 4: 粒子 pure lerp 回目标（含呼吸 + 扩散位移）──
+    const lerpSpeed = 0.04;
+
+    for (let i = 0; i < n; i++) {
+      const i3 = i * 3;
+      const px = positions[i3], py = positions[i3 + 1], pz = positions[i3 + 2];
+      const tx = targets[i3], ty = targets[i3 + 1], tz = targets[i3 + 2];
+
+      // 极微呼吸
+      const swayX = Math.sin(time * 0.18 + ty * 0.2) * 0.035
+                  + Math.cos(time * 0.25 + pz * 0.15) * 0.025;
+      const swayY = Math.cos(time * 0.20 + tx * 0.2) * 0.035
+                  + Math.sin(time * 0.22 + pz * 0.18) * 0.025;
+
+      // 水波扩散影响
+      const cx = Math.floor(px / cellSize);
+      const cy = Math.floor(py / cellSize);
+      const key = cx + "," + cy;
+      const waveX = newCellDX.get(key) || 0;
+      const waveY = newCellDY.get(key) || 0;
+
+      positions[i3]     += (tx + swayX + waveX * 0.3 - px) * lerpSpeed;
+      positions[i3 + 1] += (ty + swayY + waveY * 0.3 - py) * lerpSpeed;
+      positions[i3 + 2] += (tz - pz) * lerpSpeed * 0.6;
     }
 
     this.points.geometry.attributes.position.needsUpdate = true;
@@ -408,7 +516,6 @@ function analyzeText(text) {
   if (/游乐场|开心/.test(text)) {
     return { image: "./assets/ferris_wheel.png", color: "#FF7F50" };
   }
-  // 默认随机
   const defaults = [
     { image: "./assets/tower.png", color: "#8A2BE2" },
     { image: "./assets/cat.png",   color: "#FFFACD" },
@@ -418,14 +525,81 @@ function analyzeText(text) {
 }
 
 // ═══════════════════════════════════════════
-// DALL·E 实时剪影生成
+// LLM 情感分析中枢 (DeepSeek)
 // ═══════════════════════════════════════════
-async function generateSilhouette(text) {
-  console.log("[MindScape] 正在调用 OpenAI API 生图...");
+async function analyzeDiaryWithLLM(text) {
+  console.log("[MindScape] 正在呼叫大语言模型分析日记...");
+
+  const systemPrompt = `你是一个拥有极高艺术审美的心理分析师，目标受众是年轻女性。
+
+用户会输入一段日记文本。请执行以下推理链：
+
+【Step 1 — 情感分析】
+提取主导情绪与次要情绪，并推导对应的心理颜色（不含黑色和白色，基于色彩心理学）。
+
+【Step 2 — 意象创作】
+提取或创作一个最具画面感的核心意象。如果用户只表达了抽象感受（如"被掏空""像漂浮的云"），你必须发挥艺术家洞察力，为这种感受赋予一个具体的视觉隐喻物体。特别彩蛋：如果用户参加了比赛/竞技，可以输出金色奖杯意象。
+
+【Step 3 — 生图提示词 (imagePrompt)】
+必须生成一段英文
+，严格遵循：
+- "A highly detailed, pure black silhouette of [意象], intricate details, fairy-tale style, elegant, on a pure white background, extremely high contrast, black and white only, no other colors, solid fill or clean outline."
+- 禁止出现除 black/white 以外的任何颜色词。
+
+【Step 4 — 主题颜色 (themeColor)】
+因为最终渲染背景是浅米色(#F9F6F0)，你必须输出深色调、低饱和度的优雅十六进制颜色：
+- 复古玫瑰红 #803E4D / 深海蓝 #2C3E50 / 松石绿 #345642 / 莫兰迪紫 #5A4C64 / 干枯玫瑰 #8C5B5B / 雾蓝 #384D59 / 暖灰褐 #735947
+- 绝对不要输出刺眼的亮色或荧光色。
+
+必须严格返回合法JSON格式：{"imagePrompt": "...", "themeColor": "..."}`;
+
+  try {
+        const response = await fetch(LLM_BASE_URL + "/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${LLM_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: "deepseek-chat",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: text }
+                ],
+                response_format: { type: "json_object" }
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+            console.error("【致命拦截】LLM API 返回错误:", data.error || response.statusText);
+            alert("大模型 (DeepSeek) 接口调用失败！\n原因: " + (data.error?.message || "401 未授权，请检查 config.js 中的 API Key 是否正确"));
+            return null;
+        }
+
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            console.error("【致命拦截】LLM 返回数据结构异常:", data);
+            return null;
+        }
+
+        return JSON.parse(data.choices[0].message.content);
+
+    } catch (error) {
+        console.error("【致命拦截】LLM 网络请求彻底断开:", error);
+        alert("网络请求失败，请检查网络连接或 API 代理设置。");
+        return null;
+    }
+}
+
+// ═══════════════════════════════════════════
+// DALL·E 实时剪影生成 (接收 LLM 生成的 imagePrompt)
+// ═══════════════════════════════════════════
+async function generateSilhouette(imagePrompt) {
+  console.log("[MindScape] 正在调用 API 生图...");
 
   if (!OPENAI_API_KEY) {
     console.error("[MindScape] OPENAI_API_KEY 未配置");
-    alert("OPENAI_API_KEY 未配置，请在 main.js 顶部填入你的 API Key");
     return null;
   }
 
@@ -438,81 +612,57 @@ async function generateSilhouette(text) {
       },
       body: JSON.stringify({
         model: "gpt-image-2",
-        prompt:
-          "A pure black silhouette of " +
-          text +
-          ", on a pure white background, minimal and clean, vector art style, extremely high contrast.",
+        prompt: imagePrompt,
         n: 1,
         size: "1024x1024",
       }),
     });
 
     const data = await response.json();
-    const dataStr = JSON.stringify(data, null, 2);
-    console.log("【核心排错】API 完整返回数据 (JSON):\n" + dataStr);
+    console.log("【API返回】", JSON.stringify(data).substring(0, 300));
 
-    // 尝试兼容多种常见的中转代理返回格式
     let imageUrl = null;
-
     if (data.data && data.data[0] && data.data[0].b64_json) {
-      // 【完美绝杀】如果是 Base64 数据，直接拼接为 Data URI 格式供 Canvas 读取，彻底告别跨域烦恼！
       imageUrl = "data:image/png;base64," + data.data[0].b64_json;
     } else if (data.data && data.data[0] && data.data[0].url) {
-      imageUrl = data.data[0].url; // 官方标准 URL 格式
+      imageUrl = data.data[0].url;
     } else if (data.url) {
-      imageUrl = data.url; // 某些直返 URL 格式
+      imageUrl = data.url;
     }
 
     if (!imageUrl) {
-      console.error("无法解析图片 URL，原始数据 (JSON):\n" + dataStr);
-      alert("无法从返回值中找到 URL！请打开 F12 控制台，把【核心排错】打印出的 JSON 发给开发参谋！\n\n返回内容预览: " + dataStr.substring(0, 200));
+      console.error("无法解析图片 URL，原始数据:", JSON.stringify(data).substring(0, 200));
       return null;
     }
 
-    console.log("生图成功！URL:", imageUrl);
+    console.log("生图成功！", imageUrl.substring(0, 80));
     return imageUrl;
   } catch (error) {
-    console.error("[MindScape] 网络请求彻底失败:", error);
-    alert("网络请求失败，请检查控制台。");
+    console.error("[MindScape] 请求失败:", error);
     return null;
   }
 }
 
 // ═══════════════════════════════════════════
-// 暖色库 (粒子汇聚时随机选用)
+// 暖色库
 // ═══════════════════════════════════════════
 const WARM_COLORS = [
-  "#FFD700", // 金色
-  "#FF7F50", // 珊瑚橙
-  "#FF6B6B", // 柔红
-  "#FFB347", // 蜜橙
-  "#FF8C42", // 南瓜橘
-  "#FF6B9D", // 粉红
-  "#FFA07A", // 浅鲑
-  "#FFC154", // 杏黄
+  "#FFD700", "#FF7F50", "#FF6B6B", "#FFB347",
+  "#FF8C42", "#FF6B9D", "#FFA07A", "#FFC154",
 ];
-
 function randomWarmColor() {
   return WARM_COLORS[Math.floor(Math.random() * WARM_COLORS.length)];
 }
 
 // ═══════════════════════════════════════════
-// 启动
+// 启动 — 星云球体 + 涟漪物理
 // ═══════════════════════════════════════════
-let particleSystem = new ImageToParticles("./assets/tower.png", {
-  step: 2,
-  size: 2.5,
-  scale: 8,
-  nebulaRadius: 14,
-});
+let particleSystem = new ImageToParticles(null, { nebulaRadius: 13 });
 
-particleSystem.init().then((points) => {
+particleSystem.initNebulaOnly(3000).then((points) => {
   scene.add(points);
-  console.log("[MindScape] 粒子系统就绪 —— 1.5 秒后自动汇聚");
-
-  setTimeout(() => {
-    particleSystem.assembleParticles("#8A2BE2", 2.5);
-  }, 1500);
+  particleSystem.enablePhysics();
+  console.log("[MindScape] 星云就绪 — 3000粒子，涟漪波动已激活");
 }).catch((err) => {
   console.error("[MindScape] 初始化失败:", err);
 });
@@ -527,66 +677,105 @@ diaryInput.addEventListener("keydown", async (e) => {
   const text = e.target.value.trim();
   if (!text) return;
 
-  console.log("[MindScape] 接收到用户输入:", text);
-
-  // ① 禁用输入，清空文字，防重复提交
+  console.log("[MindScape] 输入:", text);
   e.target.value = "";
   e.target.placeholder = "粒子正在思考...";
   diaryInput.disabled = true;
 
-  // ② Loading 态：让现有粒子疯狂旋转 + 随机抖动
   const oldSystem = particleSystem;
-  if (oldSystem && oldSystem.points) {
-    oldSystem.startLoadingAnimation();
-  }
+  if (oldSystem && oldSystem.points) oldSystem.startLoadingAnimation();
 
-  // ③ 调用 DALL·E 生成剪影（阻塞等待）
-  const imageUrl = await generateSilhouette(text);
-
-  // ★ 关键：API 失败返回 null 时，恢复输入框并提前退出
-  if (!imageUrl) {
-    console.error("[MindScape] 生图失败，跳过粒子重建");
-    if (oldSystem && oldSystem.points) {
-      oldSystem.stopLoadingAnimation();
-    }
+  // ① LLM 分析日记 → 提取 imagePrompt + themeColor
+  const analysis = await analyzeDiaryWithLLM(text);
+  if (!analysis || !analysis.imagePrompt) {
+    console.error("[MindScape] LLM 分析失败，无 imagePrompt");
+    if (oldSystem && oldSystem.points) oldSystem.stopLoadingAnimation();
     e.target.placeholder = "今天感觉如何？";
     diaryInput.disabled = false;
     return;
   }
 
-  // ④ 停止 loading 动画，打散旧粒子
+  // ② LLM 生成的 imagePrompt → 生图 API
+  const imageUrl = await generateSilhouette(analysis.imagePrompt);
+
+  if (!imageUrl) {
+    if (oldSystem && oldSystem.points) oldSystem.stopLoadingAnimation();
+    e.target.placeholder = "今天感觉如何？";
+    diaryInput.disabled = false;
+    return;
+  }
+
   if (oldSystem && oldSystem.points) {
     oldSystem.stopLoadingAnimation();
     await oldSystem.disperseParticles(0.75);
   }
 
-  // ⑤ 加载新图 → 提取像素 → 创建粒子
-  const color = randomWarmColor();
-  console.log(`[MindScape] 汇聚颜色: ${color}`);
-
-  particleSystem = new ImageToParticles(imageUrl, {
-    step: 2,
-    nebulaRadius: 14,
-  });
+  // ③ LLM 生成的优雅颜色
+  const color = analysis.themeColor || "#803E4D";
+  particleSystem = new ImageToParticles(imageUrl, { step: 8, nebulaRadius: 14 });
 
   try {
     const points = await particleSystem.init();
     scene.add(points);
   } catch (err) {
     console.error("[MindScape] 图片加载失败:", err.message);
-    alert("图片加载失败: " + err.message);
     e.target.placeholder = "今天感觉如何？";
     diaryInput.disabled = false;
     return;
   }
 
-  // ⑥ 聚沙成塔：粒子从星云汇聚到 DALL·E 生成的形状
   particleSystem.assembleParticles(color, 2.5);
-
-  // ⑦ 汇聚开始后恢复输入框
   e.target.placeholder = "今天感觉如何？";
   diaryInput.disabled = false;
 });
+
+// ═══════════════════════════════════════════
+// URL 参数模式：?img=URL&color=HEX → 直接加载指定图片
+// ═══════════════════════════════════════════
+(function initURLMode() {
+  const params = new URLSearchParams(window.location.search);
+  const imgUrl = params.get("img");
+  const color = params.get("color") || "#803E4D";
+
+  if (!imgUrl) return; // 无参数，走正常星云模式
+
+  console.log("[MindScape] URL 参数模式 — 直接加载:", decodeURIComponent(imgUrl).substring(0, 60));
+
+  // 隐藏输入框
+  const inputEl = document.getElementById("input-container");
+  const hintEl = document.getElementById("hint");
+  if (inputEl) inputEl.style.display = "none";
+  if (hintEl) hintEl.style.display = "none";
+
+  // 先加载星云，再替换为参数图片
+  particleSystem.initNebulaOnly(3000).then((points) => {
+    scene.add(points);
+    particleSystem.enablePhysics();
+    console.log("[MindScape] 星云就绪，1秒后加载参数图片...");
+
+    setTimeout(async () => {
+      const decodedUrl = decodeURIComponent(imgUrl);
+
+      // 打散星云
+      if (particleSystem && particleSystem.points) {
+        await particleSystem.disperseParticles(0.6);
+      }
+
+      // 创建新粒子系统
+      particleSystem = new ImageToParticles(decodedUrl, { step: 8, nebulaRadius: 14 });
+      try {
+        const pts = await particleSystem.init();
+        scene.add(pts);
+      } catch (err) {
+        console.error("[MindScape] URL 图片加载失败:", err.message);
+        return;
+      }
+      particleSystem.assembleParticles(color, 2.5);
+    }, 1200);
+  }).catch((err) => {
+    console.error("[MindScape] URL 模式初始化失败:", err);
+  });
+})();
 
 // ── 渲染循环 ──
 function animate() {
@@ -596,7 +785,6 @@ function animate() {
 }
 animate();
 
-// ── 窗口自适应 ──
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();

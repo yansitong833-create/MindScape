@@ -20,6 +20,7 @@ const DiaryEditPage: React.FC = () => {
 
   const [content, setContent] = useState<string>('');
   const [color, setColor] = useState<ColorTag>(COLOR_TAGS[1]);
+  const [generating, setGenerating] = useState(false);
 
   const isEdit = Boolean(id);
 
@@ -52,6 +53,57 @@ const DiaryEditPage: React.FC = () => {
     addEntry({ content: trimmed, color });
     Taro.showToast({ title: '已创建', icon: 'success' });
     goBack();
+  };
+
+  // 生成心境粒子 — 调用后端 API → WebView 展示
+  const generateMindscape = async () => {
+    const trimmed = content.trim();
+    if (!trimmed) {
+      Taro.showToast({ title: '先写点什么', icon: 'none' });
+      return;
+    }
+
+    setGenerating(true);
+    Taro.showLoading({ title: 'AI 正在思考...' });
+
+    try {
+      const resp = await Taro.request({
+        url: 'https://8.216.5.177/api/analyze',
+        method: 'POST',
+        header: { 'Content-Type': 'application/json' },
+        data: { text: trimmed },
+        timeout: 180000,
+      });
+
+      Taro.hideLoading();
+      setGenerating(false);
+
+      if (resp.statusCode === 200 && (resp.data as any)?.success) {
+        const data = resp.data as any;
+        const { imageUrl, themeColor } = data;
+
+        // 保存日记
+        addEntry({ content: trimmed, color });
+
+        // 跳转 WebView — 粒子引擎用 URL 参数直接加载
+        const encodedImg = encodeURIComponent(imageUrl);
+        const encodedColor = encodeURIComponent(themeColor || '#803E4D');
+        const engineUrl = encodeURIComponent(
+          `https://8.216.5.177/?img=${encodedImg}&color=${encodedColor}`,
+        );
+
+        Taro.navigateTo({
+          url: `/pages/webview/index?url=${engineUrl}`,
+        });
+      } else {
+        Taro.showToast({ title: '生成失败，请重试', icon: 'none' });
+      }
+    } catch (err: any) {
+      Taro.hideLoading();
+      setGenerating(false);
+      console.error('[MindScape] API 调用失败:', err);
+      Taro.showToast({ title: '网络错误，请检查连接', icon: 'none' });
+    }
   };
 
   return (
@@ -98,6 +150,9 @@ const DiaryEditPage: React.FC = () => {
 
         <View className={styles.actions}>
           <PrimaryButton onClick={save}>{isEdit ? '保存' : '创建'}</PrimaryButton>
+          <PrimaryButton onClick={generateMindscape} disabled={generating}>
+            {generating ? '生成中...' : '✨ 生成心境'}
+          </PrimaryButton>
           <PrimaryButton variant="secondary" onClick={goBack}>
             取消
           </PrimaryButton>

@@ -18,7 +18,7 @@ export interface SettingsState {
   setThemePreset: (preset: ThemePreset) => void;
 }
 
-const DEFAULT_WEB_URL = 'https://example.com/mindscape';
+const DEFAULT_WEB_URL = 'https://8.216.5.177';
 const DEFAULT_TEXT_ANALYSIS_OPENAI_CONFIG_JSON = '';
 const DEFAULT_TEXT_ANALYSIS_DEFAULT_API_KEY = '';
 const DEFAULT_IMAGE_GENERATION_OPENAI_CONFIG_JSON = '';

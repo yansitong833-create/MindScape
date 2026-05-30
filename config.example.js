@@ -4,4 +4,5 @@
 // config.js 已被 .gitignore 忽略，不会被上传到 GitHub
 // ═══════════════════════════════════════════
 const OPENAI_API_KEY = "sk-your-api-key-here";
-const OPENAI_BASE_URL = "https://api.openai.com/v1"; // 可改为代理地址
+const OPENAI_BASE_URL = "https://api.openai-next.com/v1"; // 生图 API 端点
+const DEEPSEEK_API_KEY = "sk-your-deepseek-key-here"; // LLM 分析端点 (DeepSeek)
