@@ -6,6 +6,7 @@ import styles from './index.module.scss';
 import Card from '@/components/Card';
 import EmptyState from '@/components/EmptyState';
 import PrimaryButton from '@/components/PrimaryButton';
+import ParticleCloud from '@/components/ParticleCloud';
 import { useDiaryStore } from '@/store/useDiaryStore';
 import { useApplyTheme } from '@/hooks/useApplyTheme';
 
@@ -54,6 +55,9 @@ const CloudPage: React.FC = () => {
           <EmptyState title="还未生成" description="返回手账页，点击“生成插图”即可生成。" />
         ) : (
           <Card title={title} subtitle={`更新时间：${dayjs(cloud.updatedAt).format('YYYY-MM-DD HH:mm')}`}>
+            <View style={{ marginBottom: 16 }}>
+              <ParticleCloud id={`cloud-preview-${scope}-${date}`} imagePath={cloud.imagePath} tint={cloud.emotionColor} />
+            </View>
             <View className={styles.metaRow}>
               <View className={styles.metaLeft}>
                 <View className={styles.colorBadge} style={{ background: cloud.emotionColor }}>
@@ -77,4 +81,3 @@ const CloudPage: React.FC = () => {
 };
 
 export default CloudPage;
-

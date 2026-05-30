@@ -15,6 +15,7 @@ export interface CloudPage {
   date: string;
   emotionColor: ColorTag;
   text: string;
+  imagePath?: string;
   updatedAt: number;
 }
 
@@ -94,11 +95,11 @@ export const useDiaryStore = create<DiaryState>()(
         const sample = generateSampleDiaryEntriesForMonth(cursor);
         set({ entries: [...sample, ...filtered].sort((a, b) => b.createdAt - a.createdAt), sampleMonth: cursor });
       },
-      upsertCloudPage: ({ scope, date, emotionColor, text, updatedAt }) =>
+      upsertCloudPage: ({ scope, date, emotionColor, text, imagePath, updatedAt }) =>
         set((state) => ({
           cloudPages: {
             ...state.cloudPages,
-            [cloudKey(scope, date)]: { scope, date, emotionColor, text, updatedAt: updatedAt ?? Date.now() },
+            [cloudKey(scope, date)]: { scope, date, emotionColor, text, imagePath, updatedAt: updatedAt ?? Date.now() },
           },
           entries: state.entries,
           sampleMonth: state.sampleMonth,
@@ -112,7 +113,7 @@ export const useDiaryStore = create<DiaryState>()(
         setItem: (name, value) => taroPersistStorage.setItem(name, value),
         removeItem: (name) => taroPersistStorage.removeItem(name),
       },
-      version: 3,
+      version: 4,
       migrate: (persistedState) => {
         const state = persistedState as Partial<DiaryState> | undefined;
         const rawEntries = (state?.entries ?? []) as Array<any>;
@@ -131,10 +132,23 @@ export const useDiaryStore = create<DiaryState>()(
           return { id, content, createdAt, color };
         });
 
+        const rawCloudPages = ((state as any)?.cloudPages ?? {}) as Record<string, any>;
+        const cloudPages: Record<string, CloudPage> = {};
+        Object.keys(rawCloudPages).forEach((k) => {
+          const v = rawCloudPages[k];
+          if (!v || typeof v !== 'object') return;
+          if (typeof v.scope !== 'string' || typeof v.date !== 'string') return;
+          const emotionColor = typeof v.emotionColor === 'string' ? (v.emotionColor as ColorTag) : '#00B8A9';
+          const text = typeof v.text === 'string' ? v.text : '';
+          const updatedAt = typeof v.updatedAt === 'number' ? v.updatedAt : Date.now();
+          const imagePath = typeof v.imagePath === 'string' ? v.imagePath : undefined;
+          cloudPages[k] = { scope: v.scope, date: v.date, emotionColor, text, updatedAt, imagePath };
+        });
+
         return {
           entries,
           sampleMonth: (state as any)?.sampleMonth ?? null,
-          cloudPages: (state as any)?.cloudPages ?? {},
+          cloudPages,
         } as unknown as DiaryState;
       },
     }

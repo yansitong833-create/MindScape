@@ -1,0 +1,17 @@
+@use '@/styles/variables.scss' as *;
+
+.container {
+  width: 100%;
+  height: 360rpx;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  background: #f7f6f2;
+  border: 2rpx solid rgba(0, 0, 0, 0.06);
+}
+
+.canvas {
+  width: 100%;
+  height: 360rpx;
+  display: block;
+}
+
