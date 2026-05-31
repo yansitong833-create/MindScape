@@ -1,13 +1,35 @@
-# API Key 配置文件
+# ── API Key 配置文件 ──
 frontend/config.js
+config.js
 backend/.env
 
-# Node
+# ── Node / 小程序 ──
 miniapp/node_modules/
 miniapp/.swc/
 miniapp/dist/
+mindscape-douyin-miniapp/node_modules/
+mindscape-douyin-miniapp/.swc/
+mindscape-douyin-miniapp/dist/
 
-# Python
+# ── 构筑日志 & 中间产物 ──
+*.log
+.pai/
+*.tsbuildinfo
+
+# ── Python ──
 __pycache__/
 *.pyc
+*.pyo
 backend/venv/
+*.egg-info/
+
+# ── IDE / 编辑器 ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS ──
+.DS_Store
+Thumbs.db

@@ -11,22 +11,22 @@ const MINDSCAPE_API_URL = typeof MINDSCAPE_API_OVERRIDE !== "undefined"
 // 左栏 时间轴 — 10+ 条诗意日记 + 状态记忆
 // ═══════════════════════════════════════════════
 const mockDiaries = [
-  { date: "02.14", text: "雨后的街道有泥土的芬芳，慢慢走回家的路上心情特别好。", color: "#8C9E82", generatedImageUrl: null, themeColor: null },
-  { date: "02.11", text: "喝到了一杯完美的焦糖玛奇朵，甜得像恋爱。", color: "#C49B7A", generatedImageUrl: null, themeColor: null },
-  { date: "02.07", text: "今天看到了很美的晚霞，买了一束郁金香。", color: "#E08F81", generatedImageUrl: null, themeColor: null },
-  { date: "02.04", text: "工作有些疲惫，但朋友突然发来一张好笑的表情包。", color: "#A8B4A5", generatedImageUrl: null, themeColor: null },
-  { date: "02.01", text: "看着窗外的落叶发呆，什么也不想做，就这样刚刚好。", color: "#B8A890", generatedImageUrl: null, themeColor: null },
-  { date: "01.28", text: "安静地看了一下午的书，时间好像变慢了。", color: "#6C7A89", generatedImageUrl: null, themeColor: null },
-  { date: "01.24", text: "和朋友一起去了新开的画廊，灵感像泉水一样涌出来。", color: "#C4A882", generatedImageUrl: null, themeColor: null },
-  { date: "01.22", text: "下雪了，整个世界都安静下来，泡了一杯热可可。", color: "#8FA9BF", generatedImageUrl: null, themeColor: null },
-  { date: "01.18", text: "早上被阳光叫醒，第一次没有按掉闹钟。", color: "#DFC98A", generatedImageUrl: null, themeColor: null },
-  { date: "01.15", text: "新的一年开始了，在日记本上写下了今年的三个心愿。", color: "#D4C5C7", generatedImageUrl: null, themeColor: null },
-  { date: "01.10", text: "今天什么也没发生，但就是觉得莫名开心。", color: "#C0B9D4", generatedImageUrl: null, themeColor: null },
-  { date: "01.06", text: "在二手书店淘到了一本泛黄的诗集，扉页上有人写过字。", color: "#A8978C", generatedImageUrl: null, themeColor: null },
+  { date: "05.28", text: "雨后的街道有泥土的芬芳，慢慢走回家的路上心情特别好。", color: "#8C9E82", generatedImageUrl: null, themeColor: null },
+  { date: "05.24", text: "喝到了一杯完美的焦糖玛奇朵，甜得像恋爱。", color: "#C49B7A", generatedImageUrl: null, themeColor: null },
+  { date: "05.19", text: "参加了黑客松比赛，和团队一起熬夜写代码，累但充实。", color: "#E08F81", generatedImageUrl: null, themeColor: null },
+  { date: "05.15", text: "工作有些疲惫，但朋友突然发来一张好笑的表情包。", color: "#A8B4A5", generatedImageUrl: null, themeColor: null },
+  { date: "05.12", text: "看着窗外的落叶发呆，什么也不想做，就这样刚刚好。", color: "#B8A890", generatedImageUrl: null, themeColor: null },
+  { date: "05.08", text: "安静地看了一下午的书，时间好像变慢了。", color: "#6C7A89", generatedImageUrl: null, themeColor: null },
+  { date: "05.03", text: "和朋友一起去了新开的画廊，灵感像泉水一样涌出来。", color: "#C4A882", generatedImageUrl: null, themeColor: null },
+  { date: "04.28", text: "下雪了，整个世界都安静下来，泡了一杯热可可。", color: "#8FA9BF", generatedImageUrl: null, themeColor: null },
+  { date: "04.22", text: "早上被阳光叫醒，第一次没有按掉闹钟。", color: "#DFC98A", generatedImageUrl: null, themeColor: null },
+  { date: "04.16", text: "新的一年开始了，在日记本上写下了今年的三个心愿。", color: "#D4C5C7", generatedImageUrl: null, themeColor: null },
+  { date: "04.10", text: "今天什么也没发生，但就是觉得莫名开心。", color: "#C0B9D4", generatedImageUrl: null, themeColor: null },
+  { date: "04.03", text: "在二手书店淘到了一本泛黄的诗集，扉页上有人写过字。", color: "#A8978C", generatedImageUrl: null, themeColor: null },
 ];
 
-let currentActiveDiaryIndex = 2;
-let currentMonth = "02";
+let currentActiveDiaryIndex = 0;
+let currentMonth = "05";
 
 function renderTimeline() {
   const listContainer = document.getElementById("diary-list");
@@ -172,14 +172,27 @@ const mousePlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
 const mouseWorld = new THREE.Vector3(9999, 9999, 0);
 const mouseNDC = new THREE.Vector2();
 
+function getRightPanelRect() {
+  const rp = document.getElementById("right-panel");
+  if (!rp) return { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+  const rect = rp.getBoundingClientRect();
+  return { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+}
+
 window.addEventListener("mousemove", (event) => {
-  mouseNDC.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouseNDC.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  const r = getRightPanelRect();
+  const rx = event.clientX - r.left;
+  const ry = event.clientY - r.top;
+  mouseNDC.x = (rx / r.width) * 2 - 1;
+  mouseNDC.y = -(ry / r.height) * 2 + 1;
 });
 window.addEventListener("touchmove", (e) => {
   if (e.touches.length) {
-    mouseNDC.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
-    mouseNDC.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
+    const r = getRightPanelRect();
+    const rx = e.touches[0].clientX - r.left;
+    const ry = e.touches[0].clientY - r.top;
+    mouseNDC.x = (rx / r.width) * 2 - 1;
+    mouseNDC.y = -(ry / r.height) * 2 + 1;
   }
 }, { passive: true });
 
@@ -206,12 +219,12 @@ function createParticleTexture() {
   canvas.height = 128;
   const ctx = canvas.getContext("2d");
 
-  // 更锐利的渐变：亮核更大，边缘收紧
+  // 实心硬边：大核心 + 极窄过渡
   const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
   gradient.addColorStop(0, "rgba(255,255,255,1)");
-  gradient.addColorStop(0.45, "rgba(255,255,255,1)");
-  gradient.addColorStop(0.55, "rgba(255,255,255,0.5)");
-  gradient.addColorStop(0.75, "rgba(255,255,255,0.03)");
+  gradient.addColorStop(0.75, "rgba(255,255,255,1)");
+  gradient.addColorStop(0.82, "rgba(255,255,255,0.6)");
+  gradient.addColorStop(0.92, "rgba(255,255,255,0.08)");
   gradient.addColorStop(1, "rgba(255,255,255,0)");
 
   ctx.fillStyle = gradient;
@@ -231,6 +244,7 @@ class ImageToParticles {
     this.scale = options.scale ?? 8;
     this.nebulaRadius = options.nebulaRadius ?? 14;
     this.brightnessThreshold = options.brightnessThreshold ?? 128;
+    this.llmColors = options.llmColors || null;  // LLM 返回的颜色比例数组
 
     this.targetPositions = null;
     this.currentPositions = null;
@@ -370,75 +384,97 @@ class ImageToParticles {
     geometry.setAttribute("position", new THREE.BufferAttribute(this.currentPositions, 3));
     geometry.setAttribute("aTarget", new THREE.BufferAttribute(this.targetPositions, 3));
 
-    // 深色基底 + 高饱和荧光点缀
-    const PALETTE = [
-      // — 基底优雅深色 (90%) —
-      { rgb: [0.50, 0.24, 0.30], weight: 16 }, // 复古玫瑰红
-      { rgb: [0.17, 0.24, 0.31], weight: 14 }, // 深海蓝
-      { rgb: [0.20, 0.34, 0.26], weight: 12 }, // 松石绿
-      { rgb: [0.35, 0.30, 0.39], weight: 12 }, // 莫兰迪紫
-      { rgb: [0.55, 0.36, 0.36], weight: 10 }, // 干枯玫瑰
-      { rgb: [0.38, 0.26, 0.18], weight: 8  }, // 深可可
-      // — 高饱和荧光呼吸灯 (10%) —
-      { rgb: [0.95, 0.35, 0.40], weight: 4  }, // 电光玫红
-      { rgb: [0.20, 0.60, 0.55], weight: 3  }, // 翡翠青
-      { rgb: [0.80, 0.45, 0.15], weight: 2  }, // 琥珀橙
-      { rgb: [0.30, 0.45, 0.75], weight: 2  }, // 钴蓝
-      { rgb: [0.85, 0.30, 0.55], weight: 1  }, // 荧光粉
-    ];
-
-    const totalWeight = PALETTE.reduce((s, c) => s + c.weight, 0);
-    const thresholds = [];
-    let acc = 0;
-    for (const c of PALETTE) { acc += c.weight / totalWeight; thresholds.push(acc); }
-
     const colors = new Float32Array(this.pointCount * 3);
-    for (let i = 0; i < this.pointCount; i++) {
-      const roll = Math.random();
-      let picked = PALETTE[0].rgb;
-      for (let j = 0; j < thresholds.length; j++) {
-        if (roll < thresholds[j]) { picked = PALETTE[j].rgb; break; }
+
+    // 使用 LLM 返回的颜色（如果有），否则用默认 PALETTE
+    if (this.llmColors && this.llmColors.length > 0) {
+      // 按 LLM 比例分配粒子颜色
+      let cumulative = 0;
+      const colorStops = this.llmColors.map(c => {
+        cumulative += c.proportion;
+        const hex = c.color.startsWith("#") ? c.color : "#803E4D";
+        const r = parseInt(hex.slice(1, 3), 16) / 255;
+        const g = parseInt(hex.slice(3, 5), 16) / 255;
+        const b = parseInt(hex.slice(5, 7), 16) / 255;
+        return { r, g, b, threshold: cumulative };
+      });
+
+      for (let i = 0; i < this.pointCount; i++) {
+        const roll = Math.random();
+        let picked = colorStops[0];
+        for (const cs of colorStops) {
+          if (roll < cs.threshold) { picked = cs; break; }
+        }
+        // 亮度随机变异，保留层次感
+        const v = 0.55 + Math.random() * 0.55;
+        colors[i * 3]     = Math.min(picked.r * v, 1.2);
+        colors[i * 3 + 1] = Math.min(picked.g * v, 1.2);
+        colors[i * 3 + 2] = Math.min(picked.b * v, 1.2);
       }
-      // 多层次亮度：深→柔和 中→鲜明 亮→荧光呼吸灯
-      const isAccent = picked[0] > 0.6 || picked[1] > 0.4;  // 荧光色
-      let v;
-      if (isAccent) {
-        v = Math.random() < 0.3 ? 1.1 + Math.random() * 0.3  // 30% 超亮荧光
-          : 0.7 + Math.random() * 0.35;                       // 70% 鲜明
-      } else {
-        v = Math.random() < 0.12 ? 1.0 + Math.random() * 0.15 // 12% 高亮
-          : Math.random() < 0.45 ? 0.55 + Math.random() * 0.35 // 45% 标准
-          : 0.25 + Math.random() * 0.25;                        // 43% 朦胧基底
+    } else {
+      // 默认 PALETTE（仅纯星云模式使用）
+      const PALETTE = [
+        { rgb: [0.50, 0.24, 0.30], weight: 16 },
+        { rgb: [0.17, 0.24, 0.31], weight: 14 },
+        { rgb: [0.20, 0.34, 0.26], weight: 12 },
+        { rgb: [0.35, 0.30, 0.39], weight: 12 },
+        { rgb: [0.55, 0.36, 0.36], weight: 10 },
+        { rgb: [0.38, 0.26, 0.18], weight: 8  },
+        { rgb: [0.95, 0.35, 0.40], weight: 4  },
+        { rgb: [0.20, 0.60, 0.55], weight: 3  },
+        { rgb: [0.80, 0.45, 0.15], weight: 2  },
+        { rgb: [0.30, 0.45, 0.75], weight: 2  },
+        { rgb: [0.85, 0.30, 0.55], weight: 1  },
+      ];
+      const totalWeight = PALETTE.reduce((s, c) => s + c.weight, 0);
+      const thresholds = [];
+      let acc = 0;
+      for (const c of PALETTE) { acc += c.weight / totalWeight; thresholds.push(acc); }
+
+      for (let i = 0; i < this.pointCount; i++) {
+        const roll = Math.random();
+        let picked = PALETTE[0].rgb;
+        for (let j = 0; j < thresholds.length; j++) {
+          if (roll < thresholds[j]) { picked = PALETTE[j].rgb; break; }
+        }
+        const isAccent = picked[0] > 0.6 || picked[1] > 0.4;
+        let v;
+        if (isAccent) {
+          v = Math.random() < 0.3 ? 1.1 + Math.random() * 0.3 : 0.7 + Math.random() * 0.35;
+        } else {
+          v = Math.random() < 0.12 ? 1.0 + Math.random() * 0.15
+            : Math.random() < 0.45 ? 0.55 + Math.random() * 0.35 : 0.25 + Math.random() * 0.25;
+        }
+        colors[i * 3]     = Math.min(picked[0] * v, 1.3);
+        colors[i * 3 + 1] = Math.min(picked[1] * v, 1.3);
+        colors[i * 3 + 2] = Math.min(picked[2] * v, 1.3);
       }
-      colors[i * 3]     = Math.min(picked[0] * v, 1.3);
-      colors[i * 3 + 1] = Math.min(picked[1] * v, 1.3);
-      colors[i * 3 + 2] = Math.min(picked[2] * v, 1.3);
     }
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
     const tex = createParticleTexture();
 
-    // 光晕层：大粒子低透明度
+    // 微光晕层：极小粒子
     const matGlow = new THREE.PointsMaterial({
-      size: 0.70,
+      size: 0.10,
       map: tex,
       color: 0xffffff,
       vertexColors: true,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.15,
       depthWrite: false,
       blending: THREE.NormalBlending,
       sizeAttenuation: true,
     });
 
-    // 锐利核心层：小粒子高透明度
+    // 实心核心层：大粒子高透明度
     const matCore = new THREE.PointsMaterial({
-      size: 0.28,
+      size: 0.50,
       map: tex,
       color: 0xffffff,
       vertexColors: true,
       transparent: true,
-      opacity: 0.82,
+      opacity: 0.92,
       depthWrite: false,
       blending: THREE.NormalBlending,
       sizeAttenuation: true,
@@ -449,6 +485,58 @@ class ImageToParticles {
     this._corePoints = new THREE.Points(geometry, matCore);
     group.add(this._glowPoints);
     group.add(this._corePoints);
+
+    // ── 浮光粒子：从画面底部往上飘 ──
+    const floatCount = 200;
+    this._floatCount = floatCount;
+    const floatPositions = new Float32Array(floatCount * 3);
+    const floatVelocities = new Float32Array(floatCount * 3);
+
+    // 获取底部Y范围（基于目标形状的下边界）
+    let minY = Infinity, maxY = -Infinity;
+    for (let i = 0; i < this.pointCount; i++) {
+      const y = this.targetPositions[i * 3 + 1];
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    const rangeY = maxY - minY || 6;
+    const rangeX = 10;
+
+    for (let i = 0; i < floatCount; i++) {
+      // 从底部区域随机散布，覆盖更宽范围
+      floatPositions[i * 3]     = (Math.random() - 0.5) * rangeX * 1.4;
+      floatPositions[i * 3 + 1] = minY - rangeY * 0.3 + Math.random() * rangeY * 1.5;
+      floatPositions[i * 3 + 2] = (Math.random() - 0.5) * 5;
+      // 飘散方向多样化：有的偏左，有的偏右，有的斜着飘
+      const angle = Math.random() * Math.PI * 2;
+      floatVelocities[i * 3]     = Math.cos(angle) * (0.002 + Math.random() * 0.006);  // 水平飘散
+      floatVelocities[i * 3 + 1] = 0.004 + Math.random() * 0.016; // 慢速上升
+      floatVelocities[i * 3 + 2] = Math.sin(angle) * (0.001 + Math.random() * 0.004);  // Z轴飘散
+    }
+
+    this._floatPositions = floatPositions;
+    this._floatVelocities = floatVelocities;
+    this._floatRangeY = rangeY;
+    this._floatMinY = minY;
+    this._floatMaxY = maxY;
+    this._floatRangeX = rangeX;
+
+    const floatGeo = new THREE.BufferGeometry();
+    floatGeo.setAttribute("position", new THREE.BufferAttribute(floatPositions, 3));
+
+    const matFloat = new THREE.PointsMaterial({
+      size: 0.40,
+      map: tex,
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
+    });
+
+    this._floatPoints = new THREE.Points(floatGeo, matFloat);
+    group.add(this._floatPoints);
 
     this.points = group;
     return group;
@@ -465,10 +553,10 @@ class ImageToParticles {
     const geo = this._corePoints.geometry;
     const positionAttr = geo.attributes.position;
 
-    // 应用 LLM 生成的优雅深色调到双层材质
+    // 应用 LLM 主题色到双层材质（微弱混合，让顶点色主导）
     if (colorHex) {
       const tint = new THREE.Color(colorHex);
-      tint.lerp(new THREE.Color(0x5C4B51), 0.3);
+      tint.lerp(new THREE.Color(0xffffff), 0.15);
       this._corePoints.material.color.copy(tint);
       const tintGlow = new THREE.Color(colorHex);
       tintGlow.lerp(new THREE.Color(0xffffff), 0.5);
@@ -536,6 +624,11 @@ class ImageToParticles {
             self._corePoints.geometry.dispose();
             self._corePoints.material.dispose();
             self._glowPoints.material.dispose();
+            if (self._floatPoints) {
+              self._floatPoints.geometry.dispose();
+              self._floatPoints.material.dispose();
+              self._floatPoints = null;
+            }
             self._corePoints = null;
             self._glowPoints = null;
             self.points = null;
@@ -726,6 +819,45 @@ class ImageToParticles {
     }
 
     this._corePoints.geometry.attributes.position.needsUpdate = true;
+
+    // ── 浮光粒子：从底部上升，到顶部后回到底部 ──
+    if (this._floatPoints && this._floatPositions) {
+      const fp = this._floatPositions;
+      const fv = this._floatVelocities;
+      const fn = this._floatCount;
+      const rangeY = this._floatRangeY;
+      const minY = this._floatMinY;
+      const maxY = this._floatMaxY;
+      const rangeX = this._floatRangeX;
+
+      const bottomY = minY - rangeY * 0.2;
+      const topY = maxY + rangeY * 0.3;
+
+      for (let i = 0; i < fn; i++) {
+        const i3 = i * 3;
+
+        // 缓慢正弦漂移：每条粒子的频率/相位不同，飘散方向各异
+        const driftX = Math.sin(time * 0.4 + i * 0.7) * 0.005 + Math.cos(time * 0.35 + i) * 0.003;
+        const driftZ = Math.cos(time * 0.45 + i * 0.6) * 0.004 + Math.sin(time * 0.38 + i) * 0.003;
+
+        fp[i3]     += fv[i3] + driftX;
+        fp[i3 + 1] += fv[i3 + 1];
+        fp[i3 + 2] += fv[i3 + 2] + driftZ;
+
+        // 到达顶部或出界 → 回到底部随机位置重生
+        if (fp[i3 + 1] > topY) {
+          fp[i3 + 1] = bottomY - Math.random() * rangeY * 0.3;
+          fp[i3]     = (Math.random() - 0.5) * rangeX * 1.4;
+          fp[i3 + 2] = (Math.random() - 0.5) * 5;
+          fv[i3 + 1] = 0.004 + Math.random() * 0.016;
+          // 重生时随机换一个飘散方向
+          const newAngle = Math.random() * Math.PI * 2;
+          fv[i3]     = Math.cos(newAngle) * (0.002 + Math.random() * 0.006);
+          fv[i3 + 2] = Math.sin(newAngle) * (0.001 + Math.random() * 0.004);
+        }
+      }
+      this._floatPoints.geometry.attributes.position.needsUpdate = true;
+    }
   }
 }
 
@@ -771,8 +903,8 @@ async function analyzeAndGenerate(text) {
       return null;
     }
 
-    console.log("[MindScape] API 返回成功:", data.themeColor);
-    return { imageUrl: data.imageUrl, themeColor: data.themeColor };
+    console.log("[MindScape] API 返回成功:", data.themeColor, "颜色组:", data.llmColors);
+    return { imageUrl: data.imageUrl, themeColor: data.themeColor, llmColors: data.llmColors || [] };
 
   } catch (error) {
     console.error("【API 不可达】", error);
@@ -800,6 +932,14 @@ function disposeCurrentParticleSystem() {
       }
     });
   }
+  // 清理漂浮粒子引用
+  if (particleSystem._floatPoints) {
+    particleSystem._floatPoints.geometry.dispose();
+    particleSystem._floatPoints.material.dispose();
+    particleSystem._floatPoints = null;
+  }
+  if (particleSystem._floatPositions) particleSystem._floatPositions = null;
+  if (particleSystem._floatVelocities) particleSystem._floatVelocities = null;
   particleSystem = null;
 }
 
@@ -895,7 +1035,7 @@ diaryInput.addEventListener("keydown", async (e) => {
 
   // ④ 用新图创建新粒子系统
   const color = result.themeColor || "#803E4D";
-  particleSystem = new ImageToParticles(result.imageUrl, { step: 8, nebulaRadius: 14 });
+  particleSystem = new ImageToParticles(result.imageUrl, { step: 8, nebulaRadius: 14, llmColors: result.llmColors || [] });
   try {
     const pts = await particleSystem.init();
     scene.add(pts);
@@ -911,12 +1051,15 @@ diaryInput.addEventListener("keydown", async (e) => {
   e.target.placeholder = "这一刻，你在想什么？";
   diaryInput.disabled = false;
 
-  // ⑤ 状态记忆
+  // ⑤ 状态记忆：保存文字 + 更新颜色 + 重绘时间轴
   const currentDiary = mockDiaries[currentActiveDiaryIndex];
   if (currentDiary) {
+    currentDiary.text = text;                          // 保存用户输入的文字
+    currentDiary.color = color;                        // 更新左侧圆点颜色
     currentDiary.generatedImageUrl = result.imageUrl;
     currentDiary.themeColor = color;
-    console.log("[MindScape] 粒子图已保存:", currentDiary.date);
+    renderTimeline();                                   // 刷新左栏显示
+    console.log("[MindScape] 日记已保存:", currentDiary.date, currentDiary.text);
   }
 });
 
