@@ -10,7 +10,7 @@
 
 /* 手账内嵌不用 WebView（原生组件会盖住整页），用 Canvas 预览 + 跳转全屏 WebView */
 .embedded {
-  height: 420rpx;
+  height: 360rpx;
   padding-top: 0;
 }
 
@@ -26,7 +26,7 @@
   right: $spacing-md;
   bottom: $spacing-md;
   z-index: 2;
-  padding: 10rpx 24rpx;
+  padding: 6rpx 18rpx;
   border-radius: 999rpx;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
@@ -49,12 +49,43 @@
   inset: 0;
   width: 100%;
   height: 100%;
+  z-index: 1;
+}
+
+.h5Iframe {
+  display: block;
+  border: none;
+  background: #f9f6f0;
+}
+
+.h5ExitBtn {
+  position: absolute;
+  top: 24rpx;
+  right: 24rpx;
+  z-index: 10;
+  padding: 8rpx 20rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.12);
+}
+
+.h5ExitBtnText {
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+}
+
+.fallbackOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  height: 100%;
+  background: rgba(249, 246, 240, 0.96);
 }
 
 .empty,
 .fallback {
   padding-top: 0;
-  height: 320rpx;
+  height: 280rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -111,10 +142,94 @@
   z-index: 9999;
 }
 
+.native {
+  display: flex;
+  flex-direction: column;
+}
+
+.monthList {
+  flex: 1;
+  height: 100%;
+  padding: $spacing-lg;
+  box-sizing: border-box;
+}
+
+.monthTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+}
+
+.monthSub {
+  margin-top: $spacing-xs;
+  margin-bottom: $spacing-md;
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.monthItem {
+  padding: $spacing-md 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.monthDate {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.monthContent {
+  margin-top: $spacing-xs;
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  line-height: $line-height-loose;
+}
+
+.nativeBack {
+  padding: $spacing-sm $spacing-md;
+  z-index: 2;
+}
+
+.nativeMeta {
+  position: absolute;
+  left: $spacing-md;
+  bottom: $spacing-md;
+  z-index: 2;
+  max-width: 85%;
+  padding: $spacing-md;
+  border-radius: $radius-md;
+  background: rgba(249, 246, 240, 0.88);
+  pointer-events: none;
+}
+
+.nativeDate {
+  font-size: $font-size-sm;
+  color: $color-text-tertiary;
+}
+
+.nativeLine {
+  display: flex;
+  align-items: flex-start;
+  margin-top: $spacing-xs;
+}
+
+.nativeDot {
+  width: 20rpx;
+  height: 20rpx;
+  border-radius: 50%;
+  margin-right: $spacing-sm;
+  flex-shrink: 0;
+}
+
+.nativeContent {
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  line-height: $line-height-loose;
+}
+
 .coverExitInner,
 .coverExpandInner {
-  padding: 12rpx 28rpx;
-  font-size: 26rpx;
+  padding: 8rpx 20rpx;
+  font-size: $font-size-sm;
   line-height: 1.4;
   color: $color-text-primary;
   background: rgba(255, 255, 255, 0.92);

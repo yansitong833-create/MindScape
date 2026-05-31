@@ -1,39 +1,45 @@
-import { getStaticParticleHtmlPath } from '@/data/staticParticleManifest';
+import { decompressGzipBase64 } from '@/utils/gzipBase64';
+import { cacheKeyToWebViewHash } from './particleWebViewHash';
 
-let cache: Record<string, string> | null | undefined;
+/** 由 npm run particle:pack-static 生成；缺省时构建会失败，请先执行 pack */
+import {
+  STATIC_PARTICLE_BUNDLE_GZIP_B64,
+  STATIC_PARTICLE_CACHE_KEYS,
+  STATIC_PARTICLE_DAY_KEYS,
+} from './staticParticleInline.generated';
 
-const loadMap = (): Record<string, string> | null => {
-  if (cache !== undefined) return cache;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require('./staticParticleInline.generated') as {
-      STATIC_PARTICLE_INLINE_HTML?: Record<string, string>;
-    };
-    const m = mod?.STATIC_PARTICLE_INLINE_HTML;
-    cache = m && typeof m === 'object' && Object.keys(m).length > 0 ? m : null;
-  } catch {
-    cache = null;
+export { STATIC_PARTICLE_CACHE_KEYS, STATIC_PARTICLE_DAY_KEYS };
+
+let bundleHtml: string | null | undefined;
+
+const getBundleHtml = (): string | null => {
+  if (bundleHtml !== undefined) return bundleHtml;
+  const b64 = (STATIC_PARTICLE_BUNDLE_GZIP_B64 || '').trim();
+  if (!b64) {
+    bundleHtml = null;
+    return null;
   }
-  return cache;
+  try {
+    bundleHtml = decompressGzipBase64(b64);
+  } catch {
+    bundleHtml = null;
+  }
+  return bundleHtml;
 };
 
 export const hasStaticParticleInline = (): boolean => {
-  const m = loadMap();
-  return !!m && Object.keys(m).length > 0;
+  const b64 = (STATIC_PARTICLE_BUNDLE_GZIP_B64 || '').trim();
+  return b64.length > 100;
 };
 
-export const getStaticParticleInlineHtml = (cacheKey: string): string | null => {
-  const m = loadMap();
-  if (!m) return null;
-  const key = (cacheKey || '').trim();
-  if (key && m[key]) return m[key];
-  const rel = getStaticParticleHtmlPath(key);
-  if (m[rel]) return m[rel];
-  return m.default ?? m['static/particle-default.html'] ?? null;
+export const getStaticParticleInlineHtml = (_cacheKey: string): string | null => {
+  return getBundleHtml();
 };
 
 export const buildStaticParticleInlineDataUri = (cacheKey: string): string | null => {
-  const html = getStaticParticleInlineHtml(cacheKey);
+  const html = getBundleHtml();
   if (!html) return null;
-  return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+  const hash = cacheKeyToWebViewHash(cacheKey);
+  const base = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
+  return hash ? `${base}#${hash}` : base;
 };

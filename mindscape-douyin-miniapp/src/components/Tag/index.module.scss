@@ -2,7 +2,7 @@
 
 .tag {
   @include button-reset;
-  height: 64rpx;
+  height: $button-height-sm;
   border-radius: 999rpx;
   padding: 0 $spacing-md;
   font-size: $font-size-sm;

@@ -13,7 +13,7 @@ const HomePage: React.FC = () => {
 
   const entries = useDiaryStore((s) => s.entries);
   const now = useMemo(() => dayjs(), []);
-  const [monthCursor, setMonthCursor] = useState<string>(now.startOf('month').format('YYYY-MM'));
+  const [monthCursor, setMonthCursor] = useState<string>('2026-05');
 
   const monthStart = useMemo(() => dayjs(`${monthCursor}-01`).startOf('month'), [monthCursor]);
   const monthEnd = useMemo(() => monthStart.endOf('month'), [monthStart]);

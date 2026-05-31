@@ -2,7 +2,7 @@
 
 .container {
   @include page-inner;
-  padding: $spacing-xl $spacing-lg;
+  padding: $spacing-lg $card-padding;
   border-radius: $radius-lg;
   background: rgba(255, 255, 255, 0.6);
   border: 2rpx dashed rgba(229, 230, 235, 0.9);

@@ -1,3 +1,4 @@
 export default definePageConfig({
-  navigationBarTitleText: '3D 心境',
+  navigationBarTitleText: '粒子云',
+  navigationStyle: 'custom',
 });

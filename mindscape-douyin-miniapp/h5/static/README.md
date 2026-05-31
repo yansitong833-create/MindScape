@@ -1,38 +1,28 @@
-# 静态粒子云 HTML（Demo / 正式展示）
+# 静态粒子云（包内内联）
 
-抖音 `web-view` **仅支持 HTTPS 业务域名**，不支持运行时生成。请将本目录下 HTML 部署到 H5 站点，并在小程序 `src/data/staticParticleManifest.ts` 登记 `cacheKey → 文件路径`。
+完整粒子资源经 `npm run particle:pack-static` 压缩后写入  
+`src/plugins/particle-cloud/staticParticleInline.generated.ts`（打进小程序 JS 包），并导出  
+`particle-bundle.html` 供 WebView 通过 **http(s)** 加载。
 
-## 部署示例
+**抖音 web-view 不支持 `data:` 本地 URI**，预览须：
 
-H5 根地址设为 `https://your-domain.com/mindscape`，则需可访问：
+1. `npm run dev:tt`（自动启动 `h5:serve` + 编译）
+2. 开发者工具勾选 **不校验 web-view 业务域名**
+3. WebView 地址为 `http://127.0.0.1:5173/static/particle-bundle.html#2026-05-xx`
 
-```
-https://your-domain.com/mindscape/static/particle-default.html
-```
-
-抖音后台 → 开发设置 → **webview 域名** 添加 `your-domain.com`。
-
-## 新增一页手账对应图
-
-1. 用 Samples 或设计工具导出**单文件 HTML**（建议无外链脚本，全部内联）
-2. 放入本目录，如 `particle-day-2026-05-31.html`
-3. 在 `staticParticleManifest.ts` 增加：
-
-```ts
-STATIC_PARTICLE_HTML['day:2026-05-31'] = 'static/particle-day-2026-05-31.html';
-```
-
-未登记的 `cacheKey` 会回退到 `static/particle-default.html`。
-
-## 本地调试
+## 从 data-single.zip 导入
 
 ```bash
-npm run h5:serve
-npm run dev:tt
+# 仓库根目录放置 data-single.zip 后：
+npm run import:data-single
 ```
 
-开发者工具勾选 **不校验合法域名、web-view**。浏览器验证：
+流程：解压 → `h5/static/imported/`（源文件，已 gitignore）→ 图像压缩 + 单 bundle gzip → 生成内联 TS → 删除 `h5/static/` 下旧 HTML。
 
+## 日常构建
+
+```bash
+npm run dev:tt    # 或 build:tt，会自动 particle:pack-static
 ```
-http://127.0.0.1:5173/static/particle-default.html
-```
+
+`cacheKey`：`day:2026-05-31`（单日粒子）、`month:2026-05`（月度粒子云，使用当月 1 日图，如 `#2026-05-01`）。

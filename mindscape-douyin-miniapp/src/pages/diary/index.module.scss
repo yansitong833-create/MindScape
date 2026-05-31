@@ -2,8 +2,8 @@
 
 .container {
   @include page-shell;
-  padding-top: $spacing-xl;
-  padding-bottom: 180rpx;
+  padding-top: $spacing-lg;
+  padding-bottom: 140rpx;
   background: $color-bg-card;
   display: flex;
   flex-direction: column;
@@ -15,8 +15,8 @@
 
 .fab {
   @include fab-bottom-right;
-  width: 104rpx;
-  height: 104rpx;
+  width: $fab-size;
+  height: $fab-size;
   border-radius: 999rpx;
   display: flex;
   align-items: center;
@@ -26,6 +26,7 @@
 }
 
 .fabIcon {
-  font-size: 48rpx;
+  font-size: $fab-icon-size;
+  line-height: 1;
   color: $color-text-white;
 }

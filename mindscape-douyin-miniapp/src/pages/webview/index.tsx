@@ -1,44 +1,40 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, WebView, Text, CoverView } from '@tarojs/components';
-import Taro, { useRouter } from '@tarojs/taro';
+import React, { useMemo } from 'react';
+import { View, Text } from '@tarojs/components';
+import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
 import EmptyState from '@/components/EmptyState';
 import PrimaryButton from '@/components/PrimaryButton';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { useApplyTheme } from '@/hooks/useApplyTheme';
 import { ParticleCloudPlugin } from '@/plugins/particle-cloud';
-import { hasStaticParticleInline } from '@/plugins/particle-cloud/staticParticleInlineLoader';
+import ParticleWebViewHost, { ParticleWebViewExitCover } from '@/plugins/particle-cloud/ParticleWebViewHost';
+import { hasStaticParticlePack } from '@/plugins/particle-cloud/staticParticleData';
 import { canOpenParticleCloud, isParticleCloudDevMode } from '@/utils/particleCloudDev';
 import { isParticleCloudUrlValid } from '@/utils/particleCloudWebUrl';
+import { pickRouteParam } from '@/utils/routeParams';
 
 const WebviewPage: React.FC = () => {
   const { primary } = useApplyTheme();
-  const router = useRouter();
   const fallbackUrl = useSettingsStore((s) => s.webUrl);
   const particleCloudReady = useMemo(
     () => canOpenParticleCloud(fallbackUrl, isParticleCloudUrlValid),
     [fallbackUrl],
   );
 
+  const cacheKey = useMemo(() => pickRouteParam('cacheKey', ''), []);
   const mode = useMemo(() => {
-    const raw = router.params?.mode ? decodeURIComponent(router.params.mode) : '';
+    const raw = pickRouteParam('mode', '');
+    if (raw === 'particleCloud') return 'particleCloud';
+    if (cacheKey) return 'particleCloud';
     return raw;
-  }, [router.params]);
+  }, [cacheKey]);
 
-  const [particleCacheKey, setParticleCacheKey] = useState('default');
+  const particleCacheKey = cacheKey || 'default';
 
   const url = useMemo(() => {
-    const raw = router.params?.url ? decodeURIComponent(router.params.url) : '';
+    const raw = pickRouteParam('url', '');
     return raw || fallbackUrl;
-  }, [fallbackUrl, router.params]);
-
-  useEffect(() => {
-    if (mode !== 'particleCloud') return;
-    const cacheKeyFromUrl = router.params?.cacheKey
-      ? decodeURIComponent(router.params.cacheKey)
-      : 'default';
-    setParticleCacheKey(cacheKeyFromUrl || 'default');
-  }, [mode, router.params?.cacheKey]);
+  }, [fallbackUrl]);
 
   const goConfig = () => {
     Taro.switchTab({ url: '/pages/mine/index' });
@@ -50,8 +46,10 @@ const WebviewPage: React.FC = () => {
       Taro.navigateBack();
       return;
     }
-    Taro.switchTab({ url: '/pages/diary/index' });
+    Taro.switchTab({ url: '/pages/index/index' });
   };
+
+  const isParticle = mode === 'particleCloud';
 
   return (
     <View className={styles.container}>
@@ -60,7 +58,7 @@ const WebviewPage: React.FC = () => {
           ‹ 返回
         </Text>
         <Text className={styles.barTitle} style={{ color: primary }}>
-          {mode === 'particleCloud' ? '粒子云' : '3D 心境'}
+          {isParticle ? '粒子云' : '3D 心境'}
         </Text>
         <View className={styles.barRight}>
           <Text className={styles.exit} onClick={goBack}>
@@ -69,7 +67,7 @@ const WebviewPage: React.FC = () => {
         </View>
       </View>
 
-      {mode === 'particleCloud' ? (
+      {isParticle ? (
         particleCloudReady ? (
           <View className={styles.particleArea}>
             <ParticleCloudPlugin cacheKey={particleCacheKey} onExit={goBack} />
@@ -79,25 +77,23 @@ const WebviewPage: React.FC = () => {
             <EmptyState
               title="无法打开粒子云"
               description={
-                hasStaticParticleInline()
-                  ? '静态 HTML 已打进包内，若仍失败请重新执行 npm run build:tt:local-demo。'
+                hasStaticParticlePack()
+                  ? '包内数据未加载，请执行 npm run particle:pack-static 后重新编译。'
                   : isParticleCloudDevMode()
-                    ? '请执行 npm run dev:tt:local-demo 或 h5:serve。'
-                    : '请执行 npm run build:tt:local-demo 或配置 HTTPS。'
+                    ? '请执行 npm run dev:tt 或 npm run build:h5（含 pack-static）。'
+                    : '请执行 npm run import:data-single 导入资源并打包。'
               }
             />
             <PrimaryButton onClick={goConfig}>去设置</PrimaryButton>
           </View>
         )
       ) : url ? (
-        <WebView src={url} className={styles.webView}>
-          <CoverView className={styles.coverExit} onClick={goBack}>
-            <CoverView className={styles.coverExitInner}>退出</CoverView>
-          </CoverView>
-        </WebView>
+        <View className={styles.particleArea}>
+          <ParticleWebViewHost src={url} coverExit={<ParticleWebViewExitCover onExit={goBack} />} />
+        </View>
       ) : (
         <View className={styles.fallback}>
-          <EmptyState title="未配置地址" description="请先在「我的」页面设置 H5 地址，并在抖音后台配置业务域名。" />
+          <EmptyState title="未配置地址" description="请先在「我的」页面设置 H5 地址。" />
           <PrimaryButton onClick={goConfig}>去设置</PrimaryButton>
         </View>
       )}

@@ -2,6 +2,7 @@ import { defineConfig, type UserConfigExport } from '@tarojs/cli';
 import TsconfigPathsPlugin from 'tsconfig-paths-webpack-plugin';
 import devConfig from './dev';
 import prodConfig from './prod';
+import demoSingleHtmlConfig from './demo-single-html';
 import vitePluginImp from 'vite-plugin-imp';
 // https://taro-docs.jd.com/docs/next/config#defineconfig-辅助函数
 export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
@@ -20,7 +21,7 @@ export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
     plugins: ['@tarojs/plugin-html'],
     defineConstants: {},
     copy: {
-      patterns: [],
+      patterns: [{ from: 'h5/static/particle-bundle.html', to: 'static/particle-bundle.html' }],
       options: {},
     },
     framework: 'react',
@@ -54,8 +55,12 @@ export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
       },
     },
     h5: {
-      publicPath: '/',
+      // 虚拟创作平台 zip 内相对路径加载资源，避免 /js/xxx 404 白屏
+      publicPath: process.env.TARO_H5_PUBLIC_PATH || '/',
       staticDirectory: 'static',
+      router: {
+        mode: 'hash',
+      },
       output: {
         filename: 'js/[name].[hash:8].js',
         chunkFilename: 'js/[name].[chunkhash:8].js',
@@ -81,7 +86,7 @@ export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
           enable: true,
           config: {
             selectorBlackList: ['body'],
-            baseFontSize: 37.5,
+            baseFontSize: 22,
             unitPrecision: 5,
           },
         },
@@ -99,6 +104,9 @@ export default defineConfig<'webpack5'>(async (merge, { command, mode }) => {
       },
     },
   };
+  if (process.env.DEMO_SINGLE_HTML === '1') {
+    return merge({}, baseConfig, prodConfig, demoSingleHtmlConfig);
+  }
   if (process.env.NODE_ENV === 'development') {
     // 本地开发构建配置（不混淆压缩）
     return merge({}, baseConfig, devConfig);

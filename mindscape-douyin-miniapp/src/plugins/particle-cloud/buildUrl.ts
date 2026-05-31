@@ -1,5 +1,5 @@
+import { resolveParticleWebViewSrc } from './particleWebViewSrc';
 import { isParticleCloudUrlValid } from '@/utils/particleCloudWebUrl';
-import { resolveStaticParticleWebViewSrc } from '@/utils/staticParticleWebUrl';
 
 export const resolvePluginWebViewSrc = (h5Base: string, cacheKey: string) =>
-  resolveStaticParticleWebViewSrc(h5Base, cacheKey, isParticleCloudUrlValid);
+  resolveParticleWebViewSrc(h5Base, cacheKey, isParticleCloudUrlValid);

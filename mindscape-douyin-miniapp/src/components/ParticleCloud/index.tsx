@@ -16,6 +16,9 @@ export interface ParticleCloudProps {
   cacheKey: string;
   text: string;
   contentVersion?: number;
+  /** data-single 包内压缩图，优先于预设绘制 */
+  staticImageUrl?: string;
+  staticThemeColor?: string;
 }
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -207,7 +210,13 @@ const stringifyError = (err: unknown) => {
   return String(err);
 };
 
-const ParticleCloud: React.FC<ParticleCloudProps> = ({ cacheKey, text, contentVersion }) => {
+const ParticleCloud: React.FC<ParticleCloudProps> = ({
+  cacheKey,
+  text,
+  contentVersion,
+  staticImageUrl,
+  staticThemeColor,
+}) => {
   const mountId = useRef(`m${Date.now().toString(36)}`);
   const merged = useMemo(() => text.trim(), [text]);
   const textHash = useMemo(() => contentVersion ?? hashString(merged), [contentVersion, merged]);
@@ -298,8 +307,13 @@ const ParticleCloud: React.FC<ParticleCloudProps> = ({ cacheKey, text, contentVe
         }
 
         if (!targets) {
-          targets = buildTargetsFromPresetDraw(preset.key, presetSeed, renderCtx, renderCanvas);
-          themeColor = preset.themeColor;
+          if (staticImageUrl) {
+            targets = await buildTargetsFromImage(renderCanvas, renderCtx, staticImageUrl, presetSeed);
+            themeColor = staticThemeColor || preset.themeColor;
+          } else {
+            targets = buildTargetsFromPresetDraw(preset.key, presetSeed, renderCtx, renderCanvas);
+            themeColor = preset.themeColor;
+          }
 
           const q = 10000;
           const packed = quantizeTargets(targets, q);
@@ -345,7 +359,7 @@ const ParticleCloud: React.FC<ParticleCloudProps> = ({ cacheKey, text, contentVe
       engineRef.current?.stopRender();
       engineRef.current = null;
     };
-  }, [cacheKey, merged, presetSeed, storageKey, textHash]);
+  }, [cacheKey, merged, presetSeed, storageKey, textHash, staticImageUrl, staticThemeColor]);
 
   const onTouchMove = (e: any) => {
     const p = getTouchClient(e);

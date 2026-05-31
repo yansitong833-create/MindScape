@@ -1,13 +1,23 @@
 {
   "miniprogramRoot": "./",
-  "projectname": "taro_template",
-  "description": "taro_template",
-  "appid": "touristappid",
+  "projectname": "MindScape",
+  "description": "MindScape 日记与粒子云",
+  "appid": "tt71b2070fee98df5021",
   "setting": {
     "urlCheck": true,
-    "es6": false,
-    "postcss": false,
-    "minified": false
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "uploadWithSourceMap": false
   },
-  "compileType": "miniprogram"
+  "compileType": "miniprogram",
+  "packOptions": {
+    "include": [{ "type": "file", "value": "index.html" }],
+    "ignore": [
+      { "type": "suffix", "value": ".map" },
+      { "type": "suffix", "value": ".md" },
+      { "type": "file", "value": ".DS_Store" },
+      { "type": "suffix", "value": ".LICENSE.txt" }
+    ]
+  }
 }

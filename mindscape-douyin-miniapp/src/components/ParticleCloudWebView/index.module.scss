@@ -15,8 +15,8 @@
 }
 
 .coverExitInner {
-  padding: 12rpx 28rpx;
-  font-size: 26rpx;
+  padding: 8rpx 20rpx;
+  font-size: $font-size-sm;
   line-height: 1.4;
   color: $color-text-primary;
   background: rgba(255, 255, 255, 0.92);
@@ -32,8 +32,8 @@
 }
 
 .coverDevBadgeText {
-  padding: 8rpx 16rpx;
-  font-size: 22rpx;
+  padding: 6rpx 12rpx;
+  font-size: $font-size-xs;
   line-height: 1.4;
   color: $color-text-tertiary;
   background: rgba(255, 255, 255, 0.85);

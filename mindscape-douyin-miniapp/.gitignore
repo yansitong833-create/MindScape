@@ -2,11 +2,21 @@
 
 # 确保本目录构建与生成物不入库
 /dist/
+/dist-vcreate/
+/release/
+/dist-demo/
 /node_modules/
 /.temp/
 /.swc/
 /.pai/
 
 /src/components/ParticleCloudWebView/devInlineTemplate.generated.ts
-/src/plugins/particle-cloud/staticParticleInline.generated.ts
 /h5/particle-cloud/libs/
+/h5/libs/
+/h5/static/imported/
+/h5/static/particle-20*.html
+/h5/static/particle-index-*.html
+/h5/static/particle-default.html
+/h5/static/particle-engine-standalone.js
+/h5/static/preset-diaries.md
+.tmp-import-data-single/

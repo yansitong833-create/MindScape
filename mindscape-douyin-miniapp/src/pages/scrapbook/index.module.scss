@@ -2,34 +2,26 @@
 
 .container {
   @include page-shell;
-  padding-top: $spacing-xl;
-  padding-bottom: 160rpx;
+  padding-top: $spacing-lg;
+  padding-bottom: 140rpx;
   background: $color-bg-card;
 }
 
 .topBar {
   @include page-inner;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  @include top-bar;
 }
 
 .back {
-  font-size: $font-size-md;
-  color: $color-text-secondary;
-  padding: $spacing-sm 0;
+  @include top-bar-action;
 }
 
 .barTitle {
-  font-size: $font-size-lg;
-  font-weight: $font-weight-semibold;
-  color: $color-text-primary;
-  letter-spacing: 1rpx;
+  @include top-bar-title;
 }
 
 .barRight {
-  width: 120rpx;
-  display: flex;
+  @include top-bar-side;
   justify-content: flex-end;
 }
 
@@ -40,8 +32,8 @@
 
 .fab {
   @include fab-bottom-right;
-  width: 104rpx;
-  height: 104rpx;
+  width: $fab-size;
+  height: $fab-size;
   border-radius: 999rpx;
   display: flex;
   align-items: center;
@@ -51,6 +43,7 @@
 }
 
 .fabIcon {
-  font-size: 48rpx;
+  font-size: $fab-icon-size;
+  line-height: 1;
   color: $color-text-white;
 }

@@ -13,7 +13,7 @@ export const navigateToParticleCloud = (payload: { cacheKey: string }) => {
       title: hasStaticParticleInline()
         ? '粒子云资源未就绪'
         : isParticleCloudDevMode()
-          ? '请执行 npm run particle:pack-static 或 h5:serve'
+          ? '请执行 npm run dev:tt（含 h5:serve）'
           : '请执行 npm run particle:pack-static 或配置 HTTPS',
       icon: 'none',
     });

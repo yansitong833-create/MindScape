@@ -1,6 +1,7 @@
-/** 运行 npm run particle:pack-static 后由 staticParticleInline.generated.ts 提供 */
-export const STATIC_PARTICLE_INLINE_HTML: Record<string, string> | null = null;
-
-export const hasStaticParticleInline = (): boolean => false;
-
-export const getStaticParticleInlineHtml = (_cacheKey: string): string | null => null;
+/** @deprecated 请从 staticParticleInlineLoader 导入 */
+export {
+  hasStaticParticleInline,
+  getStaticParticleInlineHtml,
+  STATIC_PARTICLE_CACHE_KEYS,
+  STATIC_PARTICLE_DAY_KEYS,
+} from './staticParticleInlineLoader';

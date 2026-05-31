@@ -5,7 +5,7 @@
 }
 
 .header {
-  margin-bottom: $spacing-lg;
+  margin-bottom: $spacing-md;
 }
 
 .title {
@@ -13,15 +13,15 @@
   font-size: $font-size-lg;
   font-weight: $font-weight-semibold;
   color: $color-text-primary;
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
 }
 
 .subtitle {
   display: block;
-  margin-top: $spacing-md;
+  margin-top: $spacing-sm;
   font-size: $font-size-sm;
   color: $color-text-tertiary;
-  letter-spacing: 0.5rpx;
+  letter-spacing: 0;
   line-height: $line-height-loose;
 }
 
@@ -29,7 +29,7 @@
   width: 100%;
   border-radius: $radius-lg;
   border: 2rpx solid $color-border;
-  padding: $spacing-lg;
+  padding: $card-padding;
   box-sizing: border-box;
   background: $color-bg-card;
 }
@@ -50,12 +50,10 @@
 }
 
 .cloudEntryBtn {
-  margin-top: $spacing-md;
+  @include chip-button;
+  margin-top: $spacing-sm;
   align-self: flex-start;
-  padding: 12rpx 28rpx;
-  border-radius: 999rpx;
-  border: 2rpx solid $color-border;
-  display: inline-flex;
+  background: $color-bg-card;
 }
 
 .cloudEntryBtnText {
@@ -83,7 +81,7 @@
 .item {
   border: 2rpx solid $color-border;
   border-radius: $radius-lg;
-  padding: $spacing-lg;
+  padding: $card-padding;
   box-sizing: border-box;
 }
 
@@ -114,15 +112,9 @@
 }
 
 .actionBtn {
-  @include button-reset;
-  height: 64rpx;
-  border-radius: 999rpx;
-  padding: 0 20rpx;
-  font-size: $font-size-sm;
+  @include chip-button;
   background: $color-bg-card;
-  border: 2rpx solid $color-border;
-  box-sizing: border-box;
-  min-width: 120rpx;
+  min-width: 88rpx;
 
   &:active {
     opacity: 0.92;

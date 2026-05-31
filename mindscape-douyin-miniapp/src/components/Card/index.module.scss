@@ -5,7 +5,7 @@
   background: $color-bg-card;
   border-radius: $radius-lg;
   border: 2rpx solid $color-border;
-  padding: $spacing-lg;
+  padding: $card-padding;
   box-sizing: border-box;
 }
 
@@ -26,7 +26,7 @@
   font-weight: $font-weight-semibold;
   color: $color-text-primary;
   line-height: $line-height-tight;
-  letter-spacing: 1rpx;
+  letter-spacing: 0;
   @include text-ellipsis;
 }
 
